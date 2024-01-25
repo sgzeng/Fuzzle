@@ -1,0 +1,4 @@
+simple_benchmark/
+**/__pycache__/
+config
+programs.list

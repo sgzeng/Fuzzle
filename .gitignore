@@ -1,4 +1,5 @@
-simple_benchmark/
+*_benchmark/
 **/__pycache__/
+.vscode/
 config
 programs.list

@@ -79,12 +79,19 @@ def store_solution(maze, label, width, height):
 
 # generate a simple image of the maze
 def show_png(maze, label):
-    plt.figure(figsize=(width/10, height/10))
-    plt.imshow(maze.grid, cmap=plt.cm.binary, interpolation='nearest')
+    plot_grid = np.ones_like(maze.grid) * 0.5
+    plot_grid[maze.grid == 1] = 0
+    for (y, x) in maze.solutions[0]:
+        plot_grid[y, x] = 1
+    cmap = plt.cm.colors.ListedColormap(['black', 'white', 'orange'])
+    bounds = [0, 0.5, 1, 1.5]
+    norm = plt.cm.colors.BoundaryNorm(bounds, cmap.N)
+    plt.figure(figsize=(width, height))
+    plt.imshow(plot_grid, cmap=cmap, norm=norm, interpolation='nearest')
     plt.xticks([]), plt.yticks([])
-    plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
     plt.margins(0,0)
-    plt.savefig(label)
+    plt.savefig(label, bbox_inches='tight', pad_inches=0)
 
 def main(algorithm, width, height, seed, maze_exit, index):
     maze = generate_maze(algorithm, width, height, seed, maze_exit)

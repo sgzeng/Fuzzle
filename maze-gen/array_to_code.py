@@ -122,11 +122,14 @@ def render_program(c_file, maze, maze_funcs, width, height, generator, sln, smt_
     bug = generator.get_bug()
 
     f.write("#include <stdio.h>\n" \
+    "#include <signal.h>\n" \
     "#include <stdlib.h>\n" \
     "#include <string.h>\n" \
     "#include <unistd.h>\n" \
     "#include <stdint.h>\n")
     f.write("""#define MAX_LIMIT {}\n\n""".format(total_bytes))
+    global_counter_declaration = f"unsigned int counter[{width * height}] = {{0}};\n"
+    f.write(global_counter_declaration)
     function_format_declaration = """void func_{}(signed char *input, int index, int length);\n"""
     function_declarations = ""
     for k in range(width*height):
@@ -150,8 +153,24 @@ def render_program(c_file, maze, maze_funcs, width, height, generator, sln, smt_
     } else {
     \treturn 1;
     }\n}\n""")
-
+    print_counter_code = """void print_counter() {{
+    if (getenv("MAZE_COV") == NULL) {{
+        for (int i = 0; i < {array_size}; i++) {{
+            if (counter[i] != 0) {{
+                printf("counter[%d] = %u\\n", i, counter[i]);
+            }}
+        }}
+    }}\n}}\n""".format(array_size=width * height)
+    f.write(print_counter_code)
+    
+    signal_handler_code = """void signal_handler(int sig) {
+    print_counter();
+    signal(sig, SIG_DFL);
+    raise(sig);
+    }\n\n"""
+    f.write(signal_handler_code)
     function_begin_format = """void func_{}(signed char *input, int index, int length){{
+    counter[{}] += 1;
     int bytes_to_use = {};
     if (is_within_limit(input, index, bytes_to_use, length)){{
     \tsigned char *copy;
@@ -170,7 +189,7 @@ def render_program(c_file, maze, maze_funcs, width, height, generator, sln, smt_
     function_deadend = """}\n}\n"""
 
     for idx in range(width*height):
-        f.write(function_begin_format.format(idx, numb_bytes[idx], logic_c[idx]))
+        f.write(function_begin_format.format(idx, idx, numb_bytes[idx], logic_c[idx]))
         valid_edges = len(maze.graph[idx])
         if valid_edges == 0:
             f.write(function_deadend)
@@ -188,10 +207,13 @@ def render_program(c_file, maze, maze_funcs, width, height, generator, sln, smt_
         f.write(function_end)
 
     f.write("""int main(){{
+    atexit(print_counter);
+    signal(SIGABRT, signal_handler);
     signed char input[MAX_LIMIT];
     int input_length = read(0, input, MAX_LIMIT);
     int index = 0;
-    func_{}(input, index, input_length);\n}}\n""".format(maze_funcs[(0, 0)]))
+    func_{}(input, index, input_length);
+    }}\n""".format(maze_funcs[(0, 0)]))
     f.close()
 
 def main(maze_file, width, height, cycle, seed, generator, smt_file, CVE_name):

@@ -110,7 +110,7 @@ do
         NAME_P=$NAME"_"$CYCLE"percent_"$GEN
         python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $GEN
     fi
-    gcc -O3 -w -o $NAME_P".bin" $NAME_P".c"
+    gcc -O0 -w -g -o $NAME_P".bin" $NAME_P".c"
     mv $NAME".png" $OUTPUT_DIR/png
     mv $NAME".txt" $OUTPUT_DIR/txt
     mv $NAME_P".c" $OUTPUT_DIR/src

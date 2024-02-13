@@ -153,18 +153,50 @@ def render_program(c_file, maze, maze_funcs, width, height, generator, sln, smt_
     } else {
     \treturn 1;
     }\n}\n""")
-    print_counter_code = """void print_counter() {{
-    if (getenv("MAZE_COV") == NULL) {{
-        for (int i = 0; i < {array_size}; i++) {{
-            if (counter[i] != 0) {{
-                printf("counter[%d] = %u\\n", i, counter[i]);
+    
+    output_counter_code = """void output_counter() {{
+        const char* filepath = getenv("MAZE_COV");
+        if (filepath == NULL) {{
+            for (int i = 0; i < {array_size}; i++) {{
+                if (counter[i] != 0) {{
+                    printf("counter[%d] = %u\\n", i, counter[i]);
+                }}
             }}
         }}
+        else {{
+            FILE* file = fopen(filepath, "w");
+            if (file != NULL) {{
+                for (int i = 0; i < {array_size}; i++) {{
+                    fprintf(file, "%u\\n", counter[i]);
+                }}
+                fclose(file);
+            }} else {{
+                perror("Failed to open the MAZE_COV file for writing");
+            }}
+        }}
+    }}\n""".format(array_size=width * height)
+
+    f.write(output_counter_code)
+    init_counter_code = """void init_counter() {{
+    const char* filepath = getenv("MAZE_COV");
+    if (filepath != NULL) {{
+        FILE* file = fopen(filepath, "r");
+        if (file != NULL) {{
+            int read_entries = 0;
+            for (int i = 0; i < {array_size}; i++) {{
+                if (fscanf(file, "%u", &counter[i]) == 1) {{
+                    read_entries++;
+                }} else {{
+                    break;
+                }}
+            }}
+            fclose(file);
+            if (read_entries != {array_size}) {{memset(counter, 0, sizeof(counter));}}
+        }}
     }}\n}}\n""".format(array_size=width * height)
-    f.write(print_counter_code)
-    
+    f.write(init_counter_code)
     signal_handler_code = """void signal_handler(int sig) {
-    print_counter();
+    output_counter();
     signal(sig, SIG_DFL);
     raise(sig);
     }\n\n"""
@@ -207,8 +239,9 @@ def render_program(c_file, maze, maze_funcs, width, height, generator, sln, smt_
         f.write(function_end)
 
     f.write("""int main(){{
-    atexit(print_counter);
+    atexit(output_counter);
     signal(SIGABRT, signal_handler);
+    init_counter();
     signed char input[MAX_LIMIT];
     int input_length = read(0, input, MAX_LIMIT);
     int index = 0;

@@ -2,6 +2,7 @@ import math
 import os
 import shutil
 import sys
+import traceback
 import matplotlib.pyplot as plt
 from PIL import Image, ImageColor
 import time
@@ -86,9 +87,20 @@ if __name__ == '__main__':
     counter_file = sys.argv[2]
     out_dir = os.path.dirname(counter_file)
     size = int(math.sqrt(int(sys.argv[3])))
+
+    if len(sys.argv) == 5:
+        out_file = sys.argv[4]
+        main(maze_txt, counter_file, out_file, size)
+        sys.exit(0)
+    
     i = 0
     while True:
-        shutil.copy(counter_file, f'{out_dir}/{i}.txt')
-        main(maze_txt, counter_file, f'{out_dir}/{i}.png', size)
+        try:
+            shutil.copy(counter_file, f'{out_dir}/{i}.txt')
+            main(maze_txt, counter_file, f'{out_dir}/{i}.png', size)
+        except Exception as e:
+            with open(f'{out_dir}/error_{i}.txt', 'w') as f:
+                traceback.print_exc(file=f) 
+                f.write(str(e))
         time.sleep(60)
         i += 1

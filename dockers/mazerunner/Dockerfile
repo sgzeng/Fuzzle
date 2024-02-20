@@ -17,6 +17,11 @@ ENV AFL_SKIP_CPUFREQ=1
 ENV AFL_NO_AFFINITY=1
 ENV AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
 
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+export PATH="$PYENV_ROOT/shims:$PATH"
+eval "$(pyenv init -)"
+
 # Add scripts
 ADD run_mazerunner.py /home/maze/tools/run_mazerunner.py
 ADD get_tcs.py /home/maze/tools/get_tcs.py

@@ -1,21 +1,48 @@
 #!/bin/bash
-
-# Arg1: Target Source code
-# Arg2: Target Binary
-# Arg3: Timeout (in minutes)
+set -e
 
 sudo chown -R maze:maze /home/maze/maze
 
-WORKDIR=/home/maze/workspace
+MAZE_DIR=$1
+PROGRAM_NAME=$2
+TIMEOUT="${3}m"
+MAZE_SIZE=$4
+MAZE_TXT=$5
+DIRWORK_DIR=/home/maze/workspace
+TOOL_DIR=/home/maze/tools
+IN_DIR="${DIRWORK_DIR}/inputs"
+OUT_DIR="${DIRWORK_DIR}/outputs"
 
-INDIR=$WORKDIR/inputs
-OUTDIR=$WORKDIR/outputs
+# build the maze with afl++ instrumentation
+if [[ ! -d "${MAZE_DIR}/build" ]]; then
+    mkdir -p ${MAZE_DIR}/build
+fi
+export AFLPP="${TOOL_DIR}/AFLplusplus"
+export CC="${AFLPP}/afl-clang-fast"
+export CXX="${AFLPP}/afl-clang-fast++"
+AFL_BIN="${MAZE_DIR}/build/${PROGRAM_NAME}_aflpp"
+AFL_CMPLOG_BIN="${MAZE_DIR}/build/${PROGRAM_NAME}_aflpp_cmplog"
+$CC -g -o $AFL_BIN ${MAZE_DIR}/src/${PROGRAM_NAME}.c
+export AFL_LLVM_CMPLOG=1
+$CC -g -o $AFL_CMPLOG_BIN ${MAZE_DIR}/src/${PROGRAM_NAME}.c
+unset AFL_LLVM_CMPLOG
+unset CC && unset CXX
 
-# Create dummy input directory
-mkdir -p $INDIR
-echo '' > $INDIR/seed
+# create initial seed directory
+mkdir -p $IN_DIR
+if [[ ! -d "$IN_DIR" ]] || [[ ! -f "${IN_DIR}/init" ]]; then
+    mkdir -p $IN_DIR
+    python -c "print('A' * 2048)" > ${IN_DIR}/init
+fi
+# create coverage tracing directory
+COV_DIR="${OUT_DIR}/maze_cov"
+mkdir -p "$COV_DIR"
+export MAZE_COV="${COV_DIR}/accumulated_counter"
+python -c "print('0\n' * ${MAZE_SIZE})" > $MAZE_COV
 
+ulimit -c 0
 # Create dummy file to indicate running start
-touch $WORKDIR/.start
+touch $DIRWORK_DIR/.start
 
-timeout $3m afl-fuzz -i $INDIR -o $OUTDIR -Q -- $2
+nohup timeout $TIMEOUT python ${TOOL_DIR}/visualize_maze_cov.py ${MAZE_DIR}/txt/${MAZE_TXT}.txt ${COV_DIR}/accumulated_counter $MAZE_SIZE > ${OUT_DIR}/visualize.log 2>&1 &
+nohup timeout $TIMEOUT afl-fuzz -t 2000+ -m none -i $IN_DIR -o $OUT_DIR -c $AFL_CMPLOG_BIN -- $AFL_BIN > ${OUT_DIR}/aflpp.log 2>&1 &

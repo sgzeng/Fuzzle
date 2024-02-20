@@ -4,12 +4,12 @@ import time
 import subprocess
 
 # FIX accordingly (num maximum cores)
-NUM_WORKERS = 1
+NUM_WORKERS = 30
 
 TOOLS = ['afl', 'afl++', 'aflgo', 'eclipser', 'fuzzolic']
 
 # FIX accordingly (memory limit)
-SPAWN_CMD = 'docker run --rm -m=8g --cpuset-cpus=%d -it -d --name %s %s'
+SPAWN_CMD = 'docker run -m=8g --cpuset-cpus=%d -it -d --name %s %s'
 CP_MAZE_CMD = 'docker cp %s %s:/home/maze/maze'
 CP_CMD = 'docker cp %s:/home/maze/outputs %s'
 COMPILE_CMD = 'gcc -fprofile-arcs -ftest-coverage -o %s %s'
@@ -93,18 +93,23 @@ def spawn_containers(conf, works):
         cmd = CP_MAZE_CMD % (conf['MazeDir'], container)
         run_cmd(cmd)
 
+def get_maze_name(algo, width, height, seed, num, cycle, gen):
+    return '%s_%sx%s_%s_%s' % (algo, width, height, seed, num)
+
+def get_put_name(algo, width, height, seed, num, cycle, gen):
+    return '%s_%sx%s_%s_%s_%s_%s' % (algo, width, height, seed, num, cycle, gen)
+
 def get_src_path(algo, width, height, seed, num, cycle, gen, tool):
+    bin_name = get_put_name(algo, width, height, seed, num, cycle, gen)
     if tool == 'klee':
-        src_path = '/home/maze/maze/src/%s_%sx%s_%s_%s_%s_%s_klee.c' % \
-            (algo, width, height, seed, num, cycle, gen)
+        src_path = f'/home/maze/maze/src/{bin_name}_klee.c'
     else:
-        src_path = '/home/maze/maze/src/%s_%sx%s_%s_%s_%s_%s.c' % \
-            (algo, width, height, seed, num, cycle, gen)
+        src_path = f'/home/maze/maze/src/{bin_name}.c'
     return src_path
 
 def get_bin_path(algo, width, height, seed, num, cycle, gen):
-    bin_path = '/home/maze/maze/bin/%s_%sx%s_%s_%s_%s_%s.bin' % (algo, width, height, seed, num, cycle, gen)
-    return bin_path
+    bin_name = get_put_name(algo, width, height, seed, num, cycle, gen)
+    return f'/home/maze/maze/bin/{bin_name}.bin'
 
 def run_tools(conf, works):
     for i in range(len(works)):
@@ -116,11 +121,13 @@ def run_tools(conf, works):
         container = '%s-%sx%s-%s-%s-%s-%s-%s-%d' % (algo, width, height, seed, num, cycle, gen, tool_, epoch)
 
         script = '/home/maze/tools/run_%s.sh' % tool
-        src_path = get_src_path(algo, width, height, seed, num, cycle, gen, tool)
-        bin_path = get_bin_path(algo, width, height, seed, num, cycle, gen)
+        bin_name = get_put_name(algo, width, height, seed, num, cycle, gen)
+        maze_txt_name = get_maze_name(algo, width, height, seed, num, cycle, gen)
+        maze_dir = '/home/maze/maze'
         duration = conf['Duration']
-        cmd = '%s %s %s %s' % (script, src_path, bin_path, duration)
-
+        maze_size = str(int(width) * int(height))
+        cmd = f'{script} {maze_dir} {bin_name} {duration} {maze_size} {maze_txt_name}'
+        print(f'running cmd: {cmd} in container: {container}')
         run_cmd_in_docker(container, cmd)
 
     time.sleep(duration*60 + 60) # sleep timeout + extra 1 min.

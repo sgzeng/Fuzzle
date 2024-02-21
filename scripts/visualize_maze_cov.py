@@ -93,14 +93,15 @@ if __name__ == '__main__':
         main(maze_txt, counter_file, out_file, size)
         sys.exit(0)
     
-    i = 0
+    start_time = time.time()
     while True:
         try:
-            shutil.copy(counter_file, f'{out_dir}/{i}.txt')
-            main(maze_txt, counter_file, f'{out_dir}/{i}.png', size)
+            current_time = time.time()
+            elapsed_time = int(current_time - start_time)
+            shutil.copy(counter_file, f'{out_dir}/{elapsed_time}.txt')
+            main(maze_txt, counter_file, f'{out_dir}/{elapsed_time}.png', size)
         except Exception as e:
-            with open(f'{out_dir}/error_{i}.txt', 'w') as f:
+            with open(f'{out_dir}/error_{elapsed_time}.txt', 'w') as f:
                 traceback.print_exc(file=f) 
                 f.write(str(e))
-        time.sleep(60)
-        i += 1
+        time.sleep(59)

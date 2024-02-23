@@ -95,6 +95,7 @@ if __name__ == '__main__':
     
     start_time = time.time()
     while True:
+        time.sleep(59)
         try:
             current_time = time.time()
             elapsed_time = int(current_time - start_time)
@@ -104,4 +105,3 @@ if __name__ == '__main__':
             with open(f'{out_dir}/error_{elapsed_time}.txt', 'w') as f:
                 traceback.print_exc(file=f) 
                 f.write(str(e))
-        time.sleep(59)

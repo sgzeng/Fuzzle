@@ -3,3 +3,4 @@
 .vscode/
 config
 programs.list
+out/

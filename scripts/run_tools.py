@@ -9,8 +9,9 @@ NUM_WORKERS = 30
 TOOLS = ['afl', 'afl++', 'aflgo', 'eclipser', 'fuzzolic']
 
 # FIX accordingly (memory limit)
-SPAWN_CMD = 'docker run -m=8g --cpuset-cpus=%d -it -d --name %s %s'
+SPAWN_CMD = 'docker run --rm -m=4g --cpuset-cpus=%d -it -d --name %s %s'
 CP_MAZE_CMD = 'docker cp %s %s:/home/maze/maze'
+CP_RESULT_CMD = 'docker cp %s:/home/maze/workspace/outputs %s'
 CP_CMD = 'docker cp %s:/home/maze/outputs %s'
 COMPILE_CMD = 'gcc -fprofile-arcs -ftest-coverage -o %s %s'
 REPLAY_CMD = 'cat %s | ./%s'
@@ -156,12 +157,16 @@ def store_outputs(conf, out_dir, works):
             tool_ = tool
         container = '%s-%sx%s-%s-%s-%s-%s-%s-%d' % (algo, width, height, seed, num, cycle, gen, tool_, epoch)
 
-        maze = '%s-%sx%s-%s-%s-%s-%s' % (algo, width, height, seed, num, cycle, gen)
+        maze = get_put_name(algo, width, height, seed, num, cycle, gen)
+        # copy the tc directory
         out_path = os.path.join(out_dir, maze, '%s-%d' % (tool, epoch))
         os.system('mkdir -p %s' % out_path)
         cmd = CP_CMD % (container, out_path)
         run_cmd(cmd)
-
+        # copy the result directory
+        out_path = os.path.join(out_dir, maze, '%s-%d' % (tool, epoch), 'result')
+        cmd = CP_RESULT_CMD % (container, out_path)
+        run_cmd(cmd)
     time.sleep(60)
 
 def store_coverage(conf, out_dir, works):
@@ -199,12 +204,13 @@ def store_coverage(conf, out_dir, works):
         else:
             tool_ = tool
         container = '%s-%sx%s-%s-%s-%s-%s-%s-%d' % (algo, width, height, seed, num, cycle, gen, tool_, epoch)
-        maze = '%s_%sx%s_%s_%s_%s_%s' % (algo, width, height, seed, num, cycle, gen)
+        maze = get_put_name(algo, width, height, seed, num, cycle, gen)
         maze_tool = maze + '_%s_%d' % (tool_, epoch)
-
-        cmd = CP_FRCON_CMD % (container, '/home/maze/outputs/cov_txt_' + maze_tool, out_dir)
+        out_path = os.path.join(out_dir, maze)
+        
+        cmd = CP_FRCON_CMD % (container, '/home/maze/outputs/cov_txt_' + maze_tool, out_path)
         run_cmd(cmd)
-        cmd = CP_FRCON_CMD % (container, '/home/maze/outputs/cov_gcov_' + maze_tool, out_dir)
+        cmd = CP_FRCON_CMD % (container, '/home/maze/outputs/cov_gcov_' + maze_tool, out_path)
         run_cmd(cmd)
 
     time.sleep(60)

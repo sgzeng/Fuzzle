@@ -5,7 +5,6 @@ RUN apt -y install make build-essential
 
 # Install AFL++
 RUN git clone https://github.com/aflgo/aflgo.git /home/maze/tools/aflgo
-ADD aflgo.patch /home/maze/tools/aflgo.patch
 WORKDIR /home/maze/tools/aflgo
 
 RUN /home/maze/tools/aflgo/build.sh

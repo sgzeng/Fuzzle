@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-sudo chown -R maze:maze /home/maze/maze
-
 MAZE_DIR=$1
 PROGRAM_NAME=$2
 TIMEOUT="${3}m"
@@ -12,12 +10,10 @@ WORKDIR=/home/maze/workspace
 TOOL_DIR=/home/maze/tools
 IN_DIR="${WORKDIR}/inputs"
 OUT_DIR="${WORKDIR}/outputs"
-
 TTE="$((3*${3}/4))m"
 
-# Create dummy input directory
+sudo chown -R maze:maze $MAZE_DIR
 # create initial seed directory
-mkdir -p $IN_DIR
 if [[ ! -d "$IN_DIR" ]] || [[ ! -f "${IN_DIR}/init" ]]; then
     mkdir -p $IN_DIR
     python3 -c "print('A' * 2048)" > ${IN_DIR}/init

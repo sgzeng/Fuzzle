@@ -37,7 +37,7 @@ def visualize_coverage(matrix, counter_file, size):
         if counters[i] > 0:
             # Green with calculated brightness based on coverage count
             brightness = int(100 - 90 * (counters[i] / max_counter))
-            hsl_color = f'hsl(120, 100%, {brightness}%)'
+            hsl_color = 'hsl(120, 100%, {}%)'.format(brightness)
             hsl_matrix[y][x] = hsl_color
             matrix[y][x] = 3  # Mark as covered
         else:
@@ -58,7 +58,7 @@ def visualize_coverage(matrix, counter_file, size):
                 if j+1 < len(matrix[0]) and green_parttern in hsl_matrix[i][j+1]:
                     nodes.append(hsl_matrix[i][j+1].split(',')[2].split('%')[0].strip())
                 if nodes:
-                    hsl_color = f'hsl(120, 100%, {min([int(n) for n in nodes])}%)'
+                    hsl_color = 'hsl(120, 100%, {}%)'.format(min([int(n) for n in nodes]))
                     hsl_matrix[i][j] = hsl_color
     return hsl_matrix
 
@@ -99,9 +99,9 @@ if __name__ == '__main__':
         try:
             current_time = time.time()
             elapsed_time = int(current_time - start_time)
-            shutil.copy(counter_file, f'{out_dir}/{elapsed_time}.txt')
-            main(maze_txt, counter_file, f'{out_dir}/{elapsed_time}.png', size)
+            shutil.copy(counter_file, '{}/{}.txt'.format(out_dir, elapsed_time))
+            main(maze_txt, counter_file, '{}/{}.png'.format(out_dir, elapsed_time) , size)
         except Exception as e:
-            with open(f'{out_dir}/error_{elapsed_time}.txt', 'w') as f:
+            with open('{}/error_{}.txt'.format(out_dir, elapsed_time), 'w') as f:
                 traceback.print_exc(file=f) 
                 f.write(str(e))

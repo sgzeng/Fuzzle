@@ -4,7 +4,7 @@ import time
 import subprocess
 
 # FIX accordingly (num maximum cores)
-NUM_WORKERS = 30
+NUM_WORKERS = 1
 
 TOOLS = ['afl', 'afl++', 'aflgo', 'eclipser', 'fuzzolic', 'beacon', 'selectfuzz']
 
@@ -17,6 +17,7 @@ COMPILE_CMD = 'gcc -fprofile-arcs -ftest-coverage -o %s %s -lgcov --coverage'
 REPLAY_CMD = 'cat %s | ./%s'
 GCOV_CMD = 'gcov -b -c -s %s %s > %s'
 CP_FRCON_CMD = 'docker cp %s:%s %s'
+CP_TO_CMD = 'docker cp %s %s:%s'
 MOVE_CMD = 'mv %s %s'
 REMOVE_CMD = 'rm %s %s %s %s'
 KILL_CMD = 'docker kill %s'
@@ -115,8 +116,7 @@ def get_bin_path(algo, width, height, seed, num, cycle, gen):
     bin_name = get_put_name(algo, width, height, seed, num, cycle, gen)
     return f'/home/maze/maze/bin/{bin_name}.bin'
 
-def run_tools(conf, works):
-    duration = int(conf['Duration'])
+def copy_testcases(out_dir, works):
     for i in range(len(works)):
         algo, width, height, seed, num, cycle, gen, tool, epoch = works[i]
         if tool == 'afl++':
@@ -125,51 +125,13 @@ def run_tools(conf, works):
             tool_ = tool
         container = '%s-%sx%s-%s-%s-%s-%s-%s-%d' % (algo, width, height, seed, num, cycle, gen, tool_, epoch)
 
-        script = '/home/maze/tools/run_%s.sh' % tool
         bin_name = get_put_name(algo, width, height, seed, num, cycle, gen)
-        maze_txt_name = get_maze_name(algo, width, height, seed, num, cycle, gen)
-        maze_dir = '/home/maze/maze'
-        maze_size = str(int(width) * int(height))
-        cmd = f'{script} {maze_dir} {bin_name} {duration} {maze_size} {maze_txt_name}'
-        run_cmd_in_docker(container, cmd)
-
-    time.sleep(duration*60 + 60) # sleep timeout + extra 1 min.
-
-def store_outputs(conf, out_dir, works):
-    # First, collect testcases in /home/maze/outputs
-    for i in range(len(works)):
-        algo, width, height, seed, num, cycle, gen, tool, epoch = works[i]
-        if tool == 'afl++':
-            tool_ = 'aflpp'
-        else:
-            tool_ = tool
-        container = '%s-%sx%s-%s-%s-%s-%s-%s-%d' % (algo, width, height, seed, num, cycle, gen, tool_, epoch)
-
-        cmd = 'python3 /home/maze/tools/get_tcs.py /home/maze/outputs'
-        run_cmd_in_docker(container, cmd)
-
-    time.sleep(60)
-
-    # Next, store outputs to host filesystem
-    for i in range(len(works)):
-        algo, width, height, seed, num, cycle, gen, tool, epoch = works[i]
-        if tool == 'afl++':
-            tool_ = 'aflpp'
-        else:
-            tool_ = tool
-        container = '%s-%sx%s-%s-%s-%s-%s-%s-%d' % (algo, width, height, seed, num, cycle, gen, tool_, epoch)
-
-        maze = get_put_name(algo, width, height, seed, num, cycle, gen)
-        # copy the tc directory
-        out_path = os.path.join(out_dir, maze, '%s-%d' % (tool, epoch))
-        os.system('mkdir -p %s' % out_path)
-        cmd = CP_CMD % (container, out_path)
+        tc_path = os.path.join(out_dir, bin_name, '%s-%d' % (tool, epoch), 'outputs')
+        cmd = CP_TO_CMD % (tc_path, container, '/home/maze/outputs')
         run_cmd(cmd)
-        # copy the result directory
-        out_path = os.path.join(out_dir, maze, '%s-%d' % (tool, epoch), 'result')
-        cmd = CP_RESULT_CMD % (container, out_path)
-        run_cmd(cmd)
-    time.sleep(60)
+        cmd = CHOWN_CMD % '/home/maze/outputs'
+        run_cmd_in_docker(container, cmd)
+    time.sleep(30)
 
 def store_coverage(conf, out_dir, works):
     duration = int(conf['Duration'])
@@ -237,8 +199,7 @@ def main(conf_path, out_dir):
     while len(targets) > 0:
         works = fetch_works(targets)
         spawn_containers(conf, works)
-        run_tools(conf, works)
-        store_outputs(conf, out_dir, works)
+        copy_testcases(out_dir, works)
         store_coverage(conf, out_dir, works)
         kill_containers(works)
 

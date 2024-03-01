@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 TC_DIR=$1
 TARGET_DIR=$2
 TARGET=$3

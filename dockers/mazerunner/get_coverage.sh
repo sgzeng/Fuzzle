@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -e
 TC_DIR=$1
 TARGET_DIR=$2
 TARGET=$3
@@ -8,7 +8,7 @@ DURATION=$5 # in minutes
 NUMB_HOURS=$((DURATION/60))
 
 python3 /home/maze/tools/convert_to_cov_code.py $TARGET_DIR/$TARGET
-gcc -fprofile-arcs -ftest-coverage -o gcov-bin $TARGET_DIR/$TARGET'_cov.c'
+gcc -fprofile-arcs -ftest-coverage -o gcov-bin ${TARGET_DIR}/${TARGET}_cov.c -lgcov --coverage
 mkdir $TC_DIR/cov_txt_$MAZE_TOOL $TC_DIR/cov_gcov_$MAZE_TOOL
 
 if [ $NUMB_HOURS -lt 1 ]
@@ -27,7 +27,7 @@ then
 		fi
 	done
 
-	gcov -b -c -s $TARGET_DIR $TARGET'_cov.c' > $TC_DIR/cov_txt_$MAZE_TOOL/$MAZE_TOOL.txt
+	gcov -b -c -s $TARGET_DIR gcov-bin-${TARGET}_cov > $TC_DIR/cov_txt_$MAZE_TOOL/$MAZE_TOOL.txt
 	ls $TC_DIR/*crash_abort | head -1 >> $TC_DIR/cov_txt_$MAZE_TOOL/$MAZE_TOOL.txt
 	mv $TARGET'_cov.c.gcov' $TC_DIR/cov_gcov_$MAZE_TOOL/$MAZE_TOOL.c.gcov
 fi
@@ -57,7 +57,7 @@ do
 		fi
 	done
 
-	gcov -b -c -s $TARGET_DIR $TARGET'_cov.c' > $TC_DIR/cov_txt_$MAZE_TOOL/$MAZE_TOOL'_'$HOUR'hr.txt'
+	gcov -b -c -s $TARGET_DIR gcov-bin-${TARGET}_cov > $TC_DIR/cov_txt_$MAZE_TOOL/$MAZE_TOOL'_'$HOUR'hr.txt'
 	ls $TC_DIR/*crash_abort | head -1 >> $TC_DIR/cov_txt_$MAZE_TOOL/$MAZE_TOOL'_'$HOUR'hr.txt'
 	mv $TARGET'_cov.c.gcov' $TC_DIR/cov_gcov_$MAZE_TOOL/$MAZE_TOOL'_'$HOUR'hr.c.gcov'
 	((HOUR++))

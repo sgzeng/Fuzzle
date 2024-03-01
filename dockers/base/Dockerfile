@@ -18,6 +18,6 @@ RUN mkdir -p /home/maze/workspace
 USER root
 
 ### Install common packages
-RUN apt update
+RUN apt update && apt -y upgrade
 RUN apt install -y vim git wget sudo
 RUN echo 'maze  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers

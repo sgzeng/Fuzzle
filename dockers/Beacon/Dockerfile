@@ -1,7 +1,7 @@
 FROM maze-base
 
 # Install dependencies
-RUN apt update && apt -y install make build-essential file
+RUN apt update && apt -y upgrade && apt -y install make build-essential file
 
 # Install Beacon
 RUN git clone https://github.com/5hadowblad3/Beacon_artifact.git /home/maze/tools/beacon
@@ -46,11 +46,11 @@ ENV AFL_NO_AFFINITY=1
 ENV AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
 
 # Add scripts
-RUN pip install matplotlib
+RUN pip3 install matplotlib
+ADD get_coverage.sh /home/maze/tools/get_coverage.sh
 ADD run_beacon.sh /home/maze/tools/run_beacon.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD convert_to_cov_code.py /home/maze/tools/convert_to_cov_code.py
-ADD get_coverage.sh /home/maze/tools/get_coverage.sh
 RUN wget -P /home/maze/tools/ https://raw.githubusercontent.com/sgzeng/Fuzzle/main/scripts/visualize_maze_cov.py
 
 WORKDIR /home/maze/workspace

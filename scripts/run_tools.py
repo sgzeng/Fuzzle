@@ -13,7 +13,7 @@ SPAWN_CMD = 'docker run --rm -m=4g --cpuset-cpus=%d -it -d --name %s %s'
 CP_MAZE_CMD = 'docker cp %s %s:/home/maze/maze'
 CP_RESULT_CMD = 'docker cp %s:/home/maze/workspace/outputs %s'
 CP_CMD = 'docker cp %s:/home/maze/outputs %s'
-COMPILE_CMD = 'gcc -fprofile-arcs -ftest-coverage -o %s %s'
+COMPILE_CMD = 'gcc -fprofile-arcs -ftest-coverage -o %s %s -lgcov --coverage'
 REPLAY_CMD = 'cat %s | ./%s'
 GCOV_CMD = 'gcov -b -c -s %s %s > %s'
 CP_FRCON_CMD = 'docker cp %s:%s %s'
@@ -128,7 +128,6 @@ def run_tools(conf, works):
         duration = conf['Duration']
         maze_size = str(int(width) * int(height))
         cmd = f'{script} {maze_dir} {bin_name} {duration} {maze_size} {maze_txt_name}'
-        print(f'running cmd: {cmd} in container: {container}')
         run_cmd_in_docker(container, cmd)
 
     time.sleep(duration*60 + 60) # sleep timeout + extra 1 min.

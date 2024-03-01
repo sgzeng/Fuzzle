@@ -23,6 +23,7 @@ export PATH="$PYENV_ROOT/shims:$PATH"
 eval "$(pyenv init -)"
 
 # Add scripts
+ADD visualize_maze_cov.py /home/maze/tools/visualize_maze_cov.py
 ADD run_mazerunner.py /home/maze/tools/run_mazerunner.py
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD convert_to_cov_code.py /home/maze/tools/convert_to_cov_code.py

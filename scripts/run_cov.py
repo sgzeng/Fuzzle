@@ -4,7 +4,7 @@ import time
 import subprocess
 
 # FIX accordingly (num maximum cores)
-NUM_WORKERS = 1
+NUM_WORKERS = 30
 
 TOOLS = ['afl', 'afl++', 'aflgo', 'eclipser', 'fuzzolic', 'beacon', 'selectfuzz']
 

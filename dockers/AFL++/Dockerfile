@@ -82,9 +82,9 @@ USER maze
 
 # Add scripts
 RUN pip3 install matplotlib
+ADD visualize_maze_cov.py /home/maze/tools/visualize_maze_cov.py
 ADD get_coverage.sh /home/maze/tools/get_coverage.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD convert_to_cov_code.py /home/maze/tools/convert_to_cov_code.py
 ADD run_afl++.sh /home/maze/tools/run_afl++.sh
-RUN wget -P /home/maze/tools/ https://raw.githubusercontent.com/sgzeng/Fuzzle/main/scripts/visualize_maze_cov.py
 WORKDIR /home/maze/workspace

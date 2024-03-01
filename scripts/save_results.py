@@ -1,23 +1,29 @@
+import json
+import os
 import sys
 import csv
 from collections import defaultdict
+from glob import glob
 
-def get_files(file_list):
-    with open(file_list, 'r') as f:
-        filenames = []
-        for file in f:
-            filenames.append(file.strip('\n'))
-        return filenames
+TOOLS = ['afl', 'afl++', 'aflgo', 'eclipser', 'fuzzolic', 'beacon', 'selectfuzz']
+
+def get_coverage_files(output_dir):
+    coverage_files = []
+    for filename in glob(output_dir + '/**/cov_txt*/*txt', recursive=True):
+        coverage_files.append(filename)
+    return coverage_files
 
 def write_row_headers(writer):
     headers = ["Algorithm", "Size", "Seed", "Cycle Proportion",
-     "Generator", "Tool", "Epoch", "Number of Hours",
+     "Generator", "Tool", "Epoch",
      "Lines executed", "Branches executed", "Taken at least once",
      "Calls executed", "Time taken to first crash"]
     writer.writerow(headers)
 
-def write_rows(writer, filenames):
+def write_rows(writer, filenames, time):
     for file_path in filenames:
+        if not '{}h'.format(time) in file_path:
+            continue
         with open(file_path) as f:
             row = []
             numb = 0
@@ -33,16 +39,17 @@ def write_rows(writer, filenames):
                             row.append(int(maze[idx].strip('percent')))
                         elif idx == 5 or idx == 7:
                             row.append(maze[idx])
-                        elif idx == 9:
-                            row.append(int(maze[idx].strip('hr')))
+                        # elif idx == 9:
+                        #     row.append(int(maze[idx].strip('hr')))
                     if len(maze) < 10:
                         row.append(0)
                 if numb > 0 and numb < 5:
                     coverage = line.split(':')[1].split('%')[0]
                     row.append(float(coverage))
-                elif numb == 7:
+                if '/home/maze/outputs/' in line and '_crash_abort' in line:
                     time_taken = line.strip('/home/maze/outputs/').split('_')[0]
                     row.append(float(time_taken))
+                    break
                 numb = numb + 1
         writer.writerow(row)
 
@@ -227,8 +234,8 @@ def parse_csv(file_path, param, time, mode):
         # filter data by time
         data = []
         for row in csv_reader:
-            if row['Number of Hours'] == time:
-                data.append(row)
+            # if row['Number of Hours'] == time:
+            data.append(row)
 
         # group by fuzzer
         tools = defaultdict(list)
@@ -284,19 +291,34 @@ def parse_csv(file_path, param, time, mode):
             print("Unsupported print mode")
             exit(1)
 
+def load_config(path):
+    with open(path) as f:
+        txt = f.read()
+    conf = json.loads(txt)
+
+    assert os.path.exists(conf['MazeList']) and os.path.isfile(conf['MazeList'])
+    assert conf['Repeats'] > 0
+    assert conf['Duration'] > 0
+    assert os.path.exists(conf['MazeDir']) and os.path.isdir(conf['MazeDir'])
+    for tool in conf['Tools']:
+        assert tool in TOOLS
+
+    return conf
+
 def main(file_list, out_path, param, time, mode):
-    filenames = get_files(file_list)
     f = open(out_path, 'w')
     writer = csv.writer(f)
     write_row_headers(writer)
-    write_rows(writer, filenames)
+    write_rows(writer, file_list, time)
     f.close()
     parse_csv(out_path, param, time, mode)
 
 if __name__ == '__main__':
-    file_list = sys.argv[1]
-    out_path = sys.argv[2] + '.csv'
+    fuzz_output_dir = sys.argv[1]
+    conf = load_config(sys.argv[2])
+    file_list = get_coverage_files(fuzz_output_dir)
     param = sys.argv[3]
     time = sys.argv[4]
     mode = sys.argv[5]
+    out_path = fuzz_output_dir + '/summary_{}h.csv'.format(time)
     main(file_list, out_path, param, time, mode)

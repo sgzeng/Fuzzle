@@ -1,7 +1,7 @@
 #!/bin/bash
+set -e
+set -x
 
-# stores the raw data in .csv file
-# and prints the summarized results to the screen
 FUZZ_OUTPUT=$1
 CONFIG=$2
 PARAM=Generator
@@ -17,4 +17,5 @@ for dir in "$FUZZ_OUTPUT"/*; do
 done
 
 MODE=fuzzer
-python3 "$SCRIPT_DIR/save_results.py" "$FUZZ_OUTPUT" "$CONFIG" "$PARAM" "$DURATION" "$MODE" &> "$FUZZ_OUTPUT/summary_${MODE}_${DURATION}h.txt"
+python3 "$SCRIPT_DIR/save_results.py" "$FUZZ_OUTPUT" "$CONFIG" "$PARAM" "$DURATION" "$MODE" &> "$FUZZ_OUTPUT/summary_${MODE}_${DURATION}h.md"
+python3 "$SCRIPT_DIR/gen_table.py" "$FUZZ_OUTPUT/summary_${MODE}_${DURATION}h.md"

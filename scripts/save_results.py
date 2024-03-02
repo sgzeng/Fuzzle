@@ -79,7 +79,7 @@ def get_coverage(data):
     for row in data:
         coverage_sum += float(row['Taken at least once'])
     average_cov = coverage_sum / len(data)
-    return '%02.1f' % average_cov
+    return '%02.2f' % average_cov
 
 # get bug finding success rate
 def get_rate(data):
@@ -302,7 +302,6 @@ def load_config(path):
     assert os.path.exists(conf['MazeDir']) and os.path.isdir(conf['MazeDir'])
     for tool in conf['Tools']:
         assert tool in TOOLS
-
     return conf
 
 def main(file_list, out_path, param, time, mode):

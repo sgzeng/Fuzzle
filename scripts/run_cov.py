@@ -6,7 +6,7 @@ import subprocess
 # FIX accordingly (num maximum cores)
 NUM_WORKERS = 30
 
-TOOLS = ['afl', 'afl++', 'aflgo', 'eclipser', 'fuzzolic', 'beacon', 'selectfuzz']
+TOOLS = ['afl', 'afl++', 'aflgo', 'eclipser', 'fuzzolic', 'beacon-prebuilt', 'beacon-src', 'selectfuzz']
 
 # FIX accordingly (memory limit)
 SPAWN_CMD = 'docker run --rm -m=4g --cpuset-cpus=%d -it -d --name %s %s'

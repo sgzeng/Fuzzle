@@ -27,7 +27,6 @@ USER root
 RUN apt update && apt upgrade -y
 RUN apt install -y vim git wget sudo
 RUN echo 'maze  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers
-RUN pip3 install matplotlib pillow
 
 USER maze
 

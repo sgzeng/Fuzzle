@@ -46,10 +46,9 @@ ENV AFL_NO_AFFINITY=1
 ENV AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
 
 # Add scripts
-RUN pip3 install matplotlib
 ADD visualize_maze_cov.py /home/maze/tools/visualize_maze_cov.py
 ADD get_coverage.sh /home/maze/tools/get_coverage.sh
-ADD run_beacon.sh /home/maze/tools/run_beacon.sh
+ADD run_beacon.sh /home/maze/tools/run_beacon-prebuilt.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD convert_to_cov_code.py /home/maze/tools/convert_to_cov_code.py
 

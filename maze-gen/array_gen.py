@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-import matplotlib.pyplot as plt
+ 
 from mazelib import Maze
 from mazelib.generate.BacktrackingGenerator import BacktrackingGenerator
 from mazelib.generate.Kruskal import Kruskal

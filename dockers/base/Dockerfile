@@ -18,6 +18,7 @@ RUN mkdir -p /home/maze/workspace
 USER root
 
 ### Install common packages
-RUN apt update && apt -y upgrade
-RUN apt install -y vim git wget sudo
+RUN apt update && apt -y upgrade && \
+apt install -y vim git wget sudo && python3 python3-pip
+RUN pip3 install pillow matplotlib
 RUN echo 'maze  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers

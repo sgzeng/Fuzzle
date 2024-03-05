@@ -3,7 +3,6 @@ import os
 import shutil
 import sys
 import traceback
-import matplotlib.pyplot as plt
 from PIL import Image, ImageColor
 import time
 
@@ -26,8 +25,13 @@ def get_matrix(maze_txt):
     return matrix
 
 def visualize_coverage(matrix, counter_file, size):
+    counters = []
     with open(counter_file, 'r') as f:
-        counters = [int(line.strip()) for line in f]
+        for line in f:
+            stripped_line = line.strip()
+            if stripped_line:
+                    counters.append(int(stripped_line))
+    assert len(counters) == size*size
     max_counter = float(max(counters)) if counters else 1  # Avoid division by zero
     red = 'hsl(0, 100%, 50%)'
     black = 'hsl(0, 0%, 0%)'

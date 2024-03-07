@@ -22,14 +22,14 @@ ADD ./utils.py /home/maze/tools/utils.py
 RUN mkdir -p /home/maze/workspace
 
 USER root
+RUN chown -R maze:maze /home/maze
 
 ### Install common packages
-RUN apt update && apt upgrade -y
-RUN apt install -y vim git wget sudo
+RUN apt-get update -y && apt-get upgrade -y
+RUN apt-get install -y vim git wget sudo
 RUN echo 'maze  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers
 
 USER maze
-
 ENV AFL_SKIP_CPUFREQ=1
 ENV AFL_NO_AFFINITY=1
 ENV AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1

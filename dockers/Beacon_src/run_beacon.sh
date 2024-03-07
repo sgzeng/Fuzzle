@@ -12,7 +12,6 @@ IN_DIR="${WORKDIR}/inputs"
 OUT_DIR="${WORKDIR}/outputs"
 export LLVM_COMPILER=clang
 
-sudo chown -R maze:maze $MAZE_DIR
 # create initial seed directory
 if [[ ! -d "$IN_DIR" ]] || [[ ! -f "${IN_DIR}/init" ]]; then
     mkdir -p $IN_DIR
@@ -30,7 +29,7 @@ extract-bc file.bin
 # 2.3.2 Static Analysis
 $BEACON/precondInfer/build/bin/precondInfer ${WORKDIR}/file.bin.bc --target-file=${WORKDIR}/BBtargets.txt --join-bound=5
 # 2.3.3 Instrumentation
-$BEACON/Ins/build/Ins -output=${WORKDIR}/file.bin.bc -blocks=bbreaches.txt -afl -log=log.txt -load=range_res.txt ./transed.bc
+$BEACON/Ins/build/Ins -output=${WORKDIR}/file.bin.bc -byte -blocks=bbreaches.txt -afl -log=log.txt -load=range_res.txt ./transed.bc
 # 2.3.4 Compilation
 clang ${WORKDIR}/file.bin.bc -o ${WORKDIR}/file.bin_instrumented -lm -lz $BEACON/Fuzzer/afl-llvm-rt.o
 popd

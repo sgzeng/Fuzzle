@@ -1,7 +1,7 @@
 FROM maze-base
 
 # Install dependencies
-RUN apt update && apt -y upgrade && apt -y install make build-essential file
+RUN apt-get update -y && apt-get upgrade -y && apt-get install -y make build-essential file
 
 # Install Beacon
 RUN git clone https://github.com/5hadowblad3/Beacon_artifact.git /home/maze/tools/beacon
@@ -40,6 +40,7 @@ RUN CXXFLAGS="-fno-rtti" cmake \
 make -j$(nproc)
 
 USER maze
+RUN sudo chown -R maze:maze /home/maze
 
 ENV AFL_SKIP_CPUFREQ=1
 ENV AFL_NO_AFFINITY=1

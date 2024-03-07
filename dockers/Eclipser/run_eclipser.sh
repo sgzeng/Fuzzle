@@ -4,7 +4,6 @@
 # Arg2: Target Binary
 # Arg3: Timeout (in minutes)
 
-sudo chown -R maze:maze /home/maze/maze
 
 WORKDIR=/home/maze/workspace
 

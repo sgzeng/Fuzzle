@@ -16,9 +16,9 @@ ADD ./utils.py /home/maze/tools/utils.py
 RUN mkdir -p /home/maze/workspace
 
 USER root
-
+RUN chown -R maze:maze /home/maze
 ### Install common packages
-RUN apt update && apt -y upgrade && \
-apt install -y vim git wget sudo && python3 python3-pip tree
+RUN apt-get update -y && apt-get upgrade -y
+RUN apt-get install -y python3 python3-pip vim git wget sudo tree
 RUN pip3 install pillow matplotlib
 RUN echo 'maze  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers

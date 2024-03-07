@@ -1,7 +1,7 @@
 FROM mazerunner
 
 # Install dependencies
-RUN apt update && apt -y upgrade && apt -y install make build-essential
+RUN apt-get update -y && apt-get upgrade -y && apt-get install -y make build-essential
 RUN pip install nbformat nbconvert
 
 # Install mazerunner
@@ -12,15 +12,16 @@ WORKDIR /home/maze/tools/aflgo
 # RUN patch -p1 < ../aflgo.patch
 
 USER maze
+RUN sudo chown -R maze:maze /home/maze
 
 ENV AFL_SKIP_CPUFREQ=1
 ENV AFL_NO_AFFINITY=1
 ENV AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
 
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-export PATH="$PYENV_ROOT/shims:$PATH"
-eval "$(pyenv init -)"
+ENV PYENV_ROOT="$HOME/.pyenv"
+ENV PATH="$PYENV_ROOT/bin:$PATH"
+ENV PATH="$PYENV_ROOT/shims:$PATH"
+RUN eval "$(pyenv init -)"
 
 # Add scripts
 ADD visualize_maze_cov.py /home/maze/tools/visualize_maze_cov.py

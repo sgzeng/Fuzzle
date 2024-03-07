@@ -1,7 +1,7 @@
 FROM maze-base
 
 # Install dependencies
-RUN apt -y install make build-essential libtool libtool-bin python automake bison libglib2.0-dev
+RUN apt-get install -y make build-essential libtool libtool-bin python automake bison libglib2.0-dev
 
 # Install AFL
 RUN git clone https://github.com/google/AFL.git /home/maze/tools/AFL
@@ -27,17 +27,18 @@ ENV AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
 WORKDIR /root
 
 # Install dependencies
-RUN apt -y install apt-transport-https unzip build-essential libtool libtool-bin gdb automake autoconf bison flex python
-RUN apt -y build-dep qemu
+RUN apt-get install -y apt-transport-https unzip build-essential libtool libtool-bin gdb automake autoconf bison flex python
+RUN apt-get -y build-dep qemu
 RUN wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 RUN dpkg -i packages-microsoft-prod.deb
-RUN apt update
+RUN apt-get update -y
 # Disallow sending telemetry data from .net
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
-RUN apt -y install dotnet-sdk-2.1
+RUN apt-get install -y dotnet-sdk-2.1
 RUN rm -f packages-microsoft-prod.deb
 
 USER maze
+RUN sudo chown -R maze:maze /home/maze
 
 # Install Eclipser
 RUN git clone https://github.com/SoftSec-KAIST/Eclipser.git /home/maze/tools/Eclipser

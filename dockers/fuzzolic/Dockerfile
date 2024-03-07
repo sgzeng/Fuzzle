@@ -1,9 +1,9 @@
 FROM maze-base
 
 # Install dependencies
-RUN apt update -y && \
+RUN apt-get update -y && \
 	apt-get build-dep -y qemu-user && \ 
-	apt install -y \
+	apt-get install -y \
 	llvm-8 clang-8 nano \
 	qemu-user git libglib2.0-dev libfdt-dev \
 	libpixman-1-dev zlib1g-dev libcapstone-dev \
@@ -23,10 +23,11 @@ RUN apt update -y && \
         automake autoconf \
         bison git gdb dumb-init valgrind ninja-build \
 	time xxd python3-pip && \
-	apt clean && \
+	apt-get clean && \
 	rm -rf /var/lib/apt/lists/*
 
 USER maze
+RUN sudo chown -R maze:maze /home/maze
 
 RUN pip install --user virtualenv
 RUN python3 -m pip install --user pytest

@@ -12,7 +12,6 @@ IN_DIR="${WORKDIR}/inputs"
 OUT_DIR="${WORKDIR}/outputs"
 TTE="$((3*${3}/4))m"
 
-sudo chown -R maze:maze $MAZE_DIR
 # create initial seed directory
 if [[ ! -d "$IN_DIR" ]] || [[ ! -f "${IN_DIR}/init" ]]; then
     mkdir -p $IN_DIR

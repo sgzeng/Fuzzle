@@ -11,7 +11,6 @@ TOOL_DIR=/home/maze/tools
 IN_DIR="${WORKDIR}/inputs"
 OUT_DIR="${WORKDIR}/outputs"
 
-sudo chown -R maze:maze $MAZE_DIR
 # build the maze with afl++ instrumentation
 if [[ ! -d "${MAZE_DIR}/build" ]]; then
     mkdir -p ${MAZE_DIR}/build

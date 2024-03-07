@@ -58,7 +58,7 @@ RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 0
 RUN wget -qO- https://sh.rustup.rs | CARGO_HOME=/etc/cargo sh -s -- -y -q --no-modify-path
 ENV PATH=$PATH:/etc/cargo/bin
 
-RUN apt clean -y
+RUN apt-get clean -y
 
 ENV LLVM_CONFIG=llvm-config-${LLVM_VERSION}
 ENV AFL_SKIP_CPUFREQ=1
@@ -79,6 +79,7 @@ RUN make clean && \
     make distrib && make install
 
 USER maze
+RUN sudo chown -R maze:maze /home/maze
 
 # Add scripts
 ADD visualize_maze_cov.py /home/maze/tools/visualize_maze_cov.py

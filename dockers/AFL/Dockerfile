@@ -1,7 +1,7 @@
 FROM maze-base
 
 # Install dependencies
-RUN apt -y install make build-essential libtool libtool-bin python automake bison libglib2.0-dev
+RUN apt-get install -y make build-essential libtool libtool-bin python automake bison libglib2.0-dev
 
 # Install AFL
 RUN git clone https://github.com/google/AFL.git /home/maze/tools/AFL
@@ -21,6 +21,7 @@ WORKDIR /home/maze/tools/AFL
 RUN make install
 
 USER maze
+RUN sudo chown -R maze:maze /home/maze
 
 ENV AFL_SKIP_CPUFREQ=1
 ENV AFL_NO_AFFINITY=1

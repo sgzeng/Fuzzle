@@ -5,10 +5,10 @@ set -e
 DOCKERDIR=$(readlink -f $(dirname "$0")/..)/dockers
 
 # Build base image
-# echo "[*] Build maze-base Docker image..."
-# cd $DOCKERDIR/base
-# docker build -t maze-base .
-# echo "[*] Done!"
+echo "[*] Build maze-base Docker image..."
+cd $DOCKERDIR/base
+docker build -t maze-base .
+echo "[*] Done!"
 
 # Build AFL image
 # echo "[*] Build maze-afl Docker image..."
@@ -40,14 +40,26 @@ echo "[*] Done!"
 # docker build -t maze-fuzzolic .
 # echo "[*] Done!"
 
-# Build Beacon image
-echo "[*] Build maze-beacon Docker image..."
-cd $DOCKERDIR/Beacon
-docker build -t maze-beacon .
+# Build Beacon src image
+echo "[*] Build maze-beacon-src Docker image..."
+cd $DOCKERDIR/Beacon_src
+docker build -t maze-beacon-src .
+echo "[*] Done!"
+
+# Build Beacon prebuilt image
+echo "[*] Build maze-beacon-prebuilt Docker image..."
+cd $DOCKERDIR/Beacon_prebuilt
+docker build -t maze-beacon-prebuilt .
 echo "[*] Done!"
 
 # Build SelectFuzz image
 echo "[*] Build maze-selectfuzz Docker image..."
 cd $DOCKERDIR/SelectFuzz
 docker build -t maze-selectfuzz .
+echo "[*] Done!"
+
+# Build DAFL image
+echo "[*] Build maze-dafl Docker image..."
+cd $DOCKERDIR/DAFL
+docker build -t maze-dafl .
 echo "[*] Done!"

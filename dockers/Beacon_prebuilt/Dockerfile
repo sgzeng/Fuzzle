@@ -1,8 +1,8 @@
 FROM maze-base
 
 # Install packages needed for Beacon fuzzers
-RUN apt update && apt -y upgrade && \
-    apt -y install make python3 python3-pip file git build-essential bc libncurses5 \
+RUN apt-get update -y && apt-get upgrade -y && \
+    apt-get install -y make python3 python3-pip file git build-essential bc libncurses5 \
     # For libming
     libfreetype6 libfreetype6-dev
 
@@ -13,6 +13,7 @@ COPY ./setup_beacon.sh /home/maze/tools/setup_beacon.sh
 RUN ./setup_beacon.sh
 
 USER maze
+RUN sudo chown -R maze:maze /home/maze
 ENV CLANGDIR=/home/maze/tools/beacon/llvm4/bin/
 ENV WORKDIR=/home/maze/workspace
 ENV BEACON=/home/maze/tools/beacon

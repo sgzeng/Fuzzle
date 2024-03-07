@@ -19,6 +19,6 @@ USER root
 
 ### Install common packages
 RUN apt update && apt -y upgrade && \
-apt install -y vim git wget sudo && python3 python3-pip
+apt install -y vim git wget sudo && python3 python3-pip tree
 RUN pip3 install pillow matplotlib
 RUN echo 'maze  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers

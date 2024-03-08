@@ -17,6 +17,7 @@ if [[ ! -d "$SEED_DIR" ]] || [[ ! -f "${SEED_DIR}/init" ]]; then
     mkdir -p $SEED_DIR
     python3 -c "print('A' * 2048)" > ${SEED_DIR}/init
 fi
+mkdir $OUT_DIR
 
 rm -rf $WORKDIR/src/*
 rm -rf $INDIR/*
@@ -45,14 +46,12 @@ mkdir -p $WORKDIR/src/sparrow-output
 -unsound_recursion -unsound_noreturn_function -unsound_skip_global_array_init 1000 -skip_main_analysis -cut_cyclic_call \
 -unwrap_alloc -entry_point main -max_pre_iter 100 -slice target="$TARGET" $WORKDIR/src/00.file.c.i
 
+# DAFL Compile
 cp $WORKDIR/src/sparrow-output/target/slice_func.txt $INDIR/target_selective_cov
 cp $WORKDIR/src/sparrow-output/target/slice_dfg.txt $INDIR/target_dfg
-
-# DAFL Compile
 export DAFL_SELECTIVE_COV="$INDIR/target_selective_cov"
 export DAFL_DFG_SCORE="$INDIR/target_dfg"
-cd $INDIR
-make
+cd $INDIR && make &> $OUT_DIR/build.log
 
 # Fuzzing setting
 unset ASAN_OPTIONS

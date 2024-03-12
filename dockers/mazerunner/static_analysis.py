@@ -207,11 +207,13 @@ class CFGraph:
                 if '.c:' not in l: continue
                 targets.append(l.strip())
         targets = list(set(targets))
+        assert (len(targets) > 0), "no target in the BBtargets.txt"
         t = {node for node in self.cfg.nodes if self.extract_location(node) in targets}
         for node in t:
             # delete return nodes
             if self.cfg.out_degree(node) > 0:
                 self.targets.add(node)
+        assert (len(self.targets) > 0), "no target in the CFG"
 
     def _cal_dist_helper(self, b, jmp_dist, dcall_dist, incall_dist):
         """
@@ -288,7 +290,6 @@ class CFGraph:
             self._cal_dist_helper(b, jmp_dist, dcall_dist, incall_dist)
 
     def _compute_reachable_nodes(self, main_node):
-        assert (len(self.targets) > 0), "no target in the CFG"
         for target in self.targets:
             self.reachable_nodes.update(nx.ancestors(self.cfg, target))
         if not main_node:

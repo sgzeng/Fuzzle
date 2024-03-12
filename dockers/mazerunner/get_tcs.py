@@ -2,7 +2,7 @@ from utils import save_tc
 import os, sys
 
 WORKDIR = '/home/maze/workspace'
-OUTDIR = '/home/maze/workspace/outputs'
+OUTDIR = '/home/maze/workspace/outputs/mazerunner'
 
 def main(dest_dir):
     # Create destination directory
@@ -13,7 +13,7 @@ def main(dest_dir):
 
     # Collect testcases
     counter_tc = 1
-    tc_dir = os.path.join(OUTDIR, 'queue')
+    tc_dir = os.path.join(OUTDIR, 'generated_inputs')
     for name in os.listdir(tc_dir):
         if name.startswith('id:') and 'orig:seed' not in name:
             tc_path = os.path.join(tc_dir, name)

@@ -25,23 +25,24 @@ export CXX=$MAZERUNNER_SRC/build/bin/ko-clang++
 export CC=$MAZERUNNER_SRC/build/bin/ko-clang
 export KO_USE_FASTGEN=1
 export KO_ADD_AFLGO=1
+export KO_DONT_OPTIMIZE=1
 export AFLGO_TARGET_DIR=$BUILD_DIR/targets
 export AFLGO_PREPROCESSING=1
 mkdir -p $OUT_DIR
-mkdir -p $BUILD_DIR
+mkdir -p $AFLGO_TARGET_DIR
 
 pushd $BUILD_DIR
 # get the target line
 cp ${MAZE_DIR}/src/${PROGRAM_NAME}.c ./file.c
-ABORT_LINE=`awk '/abort*/ { print NR }' file.c`
+ABORT_LINE=`awk '/func_bug\(input/ { print NR }' file.c`
 echo 'file.c:'$ABORT_LINE > $AFLGO_TARGET_DIR/BBtargets.txt
 # generate CFGs and call graph
 $MAZERUNNER_SRC/build/bin/ko-clang -g -o ${PROGRAM_NAME}_preprocessing ./file.c
 # compute distaces
-$TOOL_DIR/static_analysis.py $AFLGO_TARGET_DIR
+python3 $TOOL_DIR/static_analysis.py $AFLGO_TARGET_DIR
 # compilation with distance instrumentation
 unset AFLGO_PREPROCESSING
-$MAZERUNNER_SRC/build/bin/ko-clang -g -O3 -o ${PROGRAM_NAME}_symsan_NM ./file.c
+$MAZERUNNER_SRC/build/bin/ko-clang -g -O0 -o ${PROGRAM_NAME}_symsan_NM ./file.c
 popd
 
 # create coverage tracing directory
@@ -56,4 +57,4 @@ touch $WORKDIR/.start
 
 # fuzz
 nohup timeout $TIMEOUT python3 ${TOOL_DIR}/visualize_maze_cov.py ${MAZE_DIR}/txt/${MAZE_TXT}.txt ${COV_DIR}/accumulated_counter $MAZE_SIZE > ${OUT_DIR}/visualize.log 2>&1 &
-nohup timeout $TIMEOUT > ${OUT_DIR}/mazerunner.log 2>&1 &
+nohup timeout $TIMEOUT $MAZERUNNER_SRC/mazerunner/mazerunner.py -a explore -i $IN_DIR -m reachability -o $OUT_DIR -s $AFLGO_TARGET_DIR -- $BUILD_DIR/${PROGRAM_NAME}_symsan_NM > ${OUT_DIR}/mazerunner.log 2>&1 &

@@ -1,16 +1,11 @@
 FROM mazerunner
 
 # Install dependencies
-RUN apt-get update -y && apt-get upgrade -y && apt-get install -y make build-essential
-RUN pip install nbformat nbconvert
+RUN apt-get update -y && apt-get upgrade -y
+RUN pip3 install networkx
 
 # Install mazerunner
-WORKDIR /home/maze/tools/aflgo
-
-# TODO: patch AFLGo
-# ADD aflgo.patch /home/maze/tools/aflgo.patch
-# RUN patch -p1 < ../aflgo.patch
-
+WORKDIR /home/maze/tools/mazerunner
 USER maze
 RUN sudo chown -R maze:maze /home/maze
 
@@ -25,9 +20,10 @@ RUN eval "$(pyenv init -)"
 
 # Add scripts
 ADD visualize_maze_cov.py /home/maze/tools/visualize_maze_cov.py
-ADD run_mazerunner.py /home/maze/tools/run_mazerunner.py
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD convert_to_cov_code.py /home/maze/tools/convert_to_cov_code.py
+ADD static_analysis.py /home/maze/tools/static_analysis.py
 ADD get_coverage.sh /home/maze/tools/get_coverage.sh
+ADD run_mazerunner.sh /home/maze/tools/run_mazerunner.sh
 
 WORKDIR /home/maze/workspace

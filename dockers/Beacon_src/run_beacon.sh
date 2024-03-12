@@ -20,8 +20,10 @@ fi
 
 pushd $WORKDIR
 cp ${MAZE_DIR}/src/${PROGRAM_NAME}.c ./file.c
+ABORT_LINE=`awk '/func_bug\(input/ { print NR }' file.c`
+echo 'file.c:'$ABORT_LINE > $TMP_DIR/BBtargets.txt
 ABORT_LINE=`awk '/abort*/ { print NR }' file.c`
-echo 'file.c:'$ABORT_LINE > ./BBtargets.txt
+echo 'file.c:'$ABORT_LINE >> $TMP_DIR/BBtargets.txt
 
 # 2.3.1 Generate bitcode file
 wllvm file.c -g -o file.bin

@@ -23,8 +23,10 @@ mkdir -p ${WORKDIR}/obj-aflgo/temp
 
 cd $SUBJECT
 cp ${MAZE_DIR}/src/${PROGRAM_NAME}.c file.c
+ABORT_LINE=`awk '/func_bug\(input/ { print NR }' file.c`
+echo 'file.c:'$ABORT_LINE > $TMP_DIR/BBtargets.txt
 ABORT_LINE=`awk '/abort*/ { print NR }' file.c`
-echo 'file.c:'$ABORT_LINE > $TMP_DIR/real.txt
+echo 'file.c:'$ABORT_LINE >> $TMP_DIR/BBtargets.txt
 
 # first build
 $SELECTFUZZ/afl-clang-fast -targets=$TMP_DIR/BBtargets.txt -outdir=$TMP_DIR -flto -fuse-ld=gold -Wl,-plugin-opt=save-temps -lpthread -o ${SUBJECT}/file.bin ${SUBJECT}/file.c

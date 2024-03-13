@@ -1,4 +1,5 @@
 #!/bin/bash
+
 TC_DIR=$1
 TARGET_DIR=$2
 TARGET=$3
@@ -26,7 +27,7 @@ then
 		fi
 	done
 
-	gcov -b -c -s $TARGET_DIR gcov-bin-${TARGET}_cov > $TC_DIR/cov_txt_$MAZE_TOOL/$MAZE_TOOL.txt
+	gcov -b -c -s $TARGET_DIR ${TARGET}_cov > $TC_DIR/cov_txt_$MAZE_TOOL/$MAZE_TOOL.txt
 	ls $TC_DIR/*crash_abort | head -1 >> $TC_DIR/cov_txt_$MAZE_TOOL/$MAZE_TOOL.txt
 	mv $TARGET'_cov.c.gcov' $TC_DIR/cov_gcov_$MAZE_TOOL/$MAZE_TOOL.c.gcov
 fi
@@ -56,7 +57,7 @@ do
 		fi
 	done
 
-	gcov -b -c -s $TARGET_DIR gcov-bin-${TARGET}_cov > $TC_DIR/cov_txt_$MAZE_TOOL/$MAZE_TOOL'_'$HOUR'hr.txt'
+	gcov -b -c -s $TARGET_DIR ${TARGET}_cov > $TC_DIR/cov_txt_$MAZE_TOOL/$MAZE_TOOL'_'$HOUR'hr.txt'
 	ls $TC_DIR/*crash_abort | head -1 >> $TC_DIR/cov_txt_$MAZE_TOOL/$MAZE_TOOL'_'$HOUR'hr.txt'
 	mv $TARGET'_cov.c.gcov' $TC_DIR/cov_gcov_$MAZE_TOOL/$MAZE_TOOL'_'$HOUR'hr.c.gcov'
 	((HOUR++))

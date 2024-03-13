@@ -14,7 +14,7 @@ OUT_DIR="${WORKDIR}/outputs"
 # create initial seed directory
 if [[ ! -d "$IN_DIR" ]] || [[ ! -f "${IN_DIR}/init" ]]; then
     mkdir -p $IN_DIR
-    python3 -c "print('A' * 2048)" > ${IN_DIR}/init
+    python3 -c "print('A' * 1024)" > ${IN_DIR}/init
 fi
 
 export BUILD_DIR=$WORKDIR/build
@@ -37,13 +37,13 @@ cp ${MAZE_DIR}/src/${PROGRAM_NAME}.c ./file.c
 ABORT_LINE=`awk '/func_bug\(input/ { print NR }' file.c`
 echo 'file.c:'$ABORT_LINE > $AFLGO_TARGET_DIR/BBtargets.txt
 # generate CFGs and call graph
-$MAZERUNNER_SRC/build/bin/ko-clang -g -o ${PROGRAM_NAME}_preprocessing ./file.c
+$CC -g -o ${PROGRAM_NAME}_preprocessing ./file.c
 # compute distaces
 python3 $TOOL_DIR/static_analysis.py $AFLGO_TARGET_DIR
 rm ${AFLGO_TARGET_DIR}/policy.pkl
 # compilation with distance instrumentation
 unset AFLGO_PREPROCESSING
-$MAZERUNNER_SRC/build/bin/ko-clang -g -O0 -o ${PROGRAM_NAME}_symsan_NM ./file.c
+$CC -g -o ${PROGRAM_NAME}_symsan_NM ./file.c
 popd
 
 # create coverage tracing directory

@@ -30,7 +30,7 @@ unset CC && unset CXX
 mkdir -p $IN_DIR
 if [[ ! -d "$IN_DIR" ]] || [[ ! -f "${IN_DIR}/init" ]]; then
     mkdir -p $IN_DIR
-    python3 -c "print('A' * 2048)" > ${IN_DIR}/init
+    python3 -c "print('A' * 1024)" > ${IN_DIR}/init
 fi
 # create coverage tracing directory
 COV_DIR="${OUT_DIR}/maze_cov"

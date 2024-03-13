@@ -15,7 +15,7 @@ INDIR=$WORKDIR/dafl-input
 # create initial seed directory
 if [[ ! -d "$SEED_DIR" ]] || [[ ! -f "${SEED_DIR}/init" ]]; then
     mkdir -p $SEED_DIR
-    python3 -c "print('A' * 2048)" > ${SEED_DIR}/init
+    python3 -c "print('A' * 1024)" > ${SEED_DIR}/init
 fi
 mkdir $OUT_DIR
 

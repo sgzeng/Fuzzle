@@ -15,7 +15,7 @@ TTE="$((3*${3}/4))m"
 # create initial seed directory
 if [[ ! -d "$IN_DIR" ]] || [[ ! -f "${IN_DIR}/init" ]]; then
     mkdir -p $IN_DIR
-    python3 -c "print('A' * 2048)" > ${IN_DIR}/init
+    python3 -c "print('A' * 1024)" > ${IN_DIR}/init
 fi
 
 export SELECTFUZZ=/selectfuzz; export SUBJECT=${WORKDIR}/obj-aflgo; export TMP_DIR=${WORKDIR}/obj-aflgo/temp

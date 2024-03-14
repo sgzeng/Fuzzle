@@ -39,7 +39,7 @@ echo 'file.c:'$ABORT_LINE > $AFLGO_TARGET_DIR/BBtargets.txt
 # generate CFGs and call graph
 $CC -g -o ${PROGRAM_NAME}_preprocessing ./file.c
 # compute distaces
-python3 $TOOL_DIR/static_analysis.py $AFLGO_TARGET_DIR
+python3 $MAZERUNNER_SRC/mazerunner/static_analysis.py $AFLGO_TARGET_DIR
 rm ${AFLGO_TARGET_DIR}/policy.pkl
 # compilation with distance instrumentation
 unset AFLGO_PREPROCESSING

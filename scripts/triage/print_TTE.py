@@ -13,8 +13,8 @@ def get_average_TTE(data, CVE):
     if bug_count == 0:
         return '-'
     else:
-        average_TTE = (TTE_sum / bug_count)/3600
-        return '%02.2f' % average_TTE
+        average_TTE = (TTE_sum / bug_count)/60
+        return '%02.1f' % average_TTE
 
 def get_median_TTE(data, CVE):
     TTE_list = list()
@@ -24,8 +24,8 @@ def get_median_TTE(data, CVE):
     if len(TTE_list) < 1:
         return '-'
     else:
-        median_TTE = (statistics.median(TTE_list))/3600
-        return '%02.2f' % median_TTE
+        median_TTE = (statistics.median(TTE_list))/60
+        return '%02.1f' % median_TTE
 
 def parse_csv(file_path):
     with open(file_path, 'r') as f:

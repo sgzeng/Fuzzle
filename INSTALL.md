@@ -85,7 +85,7 @@ Tool            Algorithm
 afl             0
 --------------------------------
 
-Measure:        TTE (h)
+Measure:        TTE (min)
 ################################
 Tool            Algorithm
                 Wilsons

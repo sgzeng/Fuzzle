@@ -101,8 +101,8 @@ def get_TTE(data):
     if bug_count == 0:
         return '-'
     else:
-        average_TTE = (TTE_sum / bug_count)/3600
-        return '%02.2f' % average_TTE
+        average_TTE = (TTE_sum / bug_count)/60
+        return '%02.1f' % average_TTE
 
 def print_results_fuzzer(data, tool, param):
     print("##############################################")
@@ -114,7 +114,7 @@ def print_results_fuzzer(data, tool, param):
         print(param + ":\t" + v)
         print("Coverage (%):\t" + get_coverage(tool_data[v]))
         print("Bugs (%):\t" + get_rate(tool_data[v]))
-        print("TTE (h):\t" + get_TTE(tool_data[v]))
+        print("TTE (min):\t" + get_TTE(tool_data[v]))
 
 def sort_values(values):
     values_int = set()
@@ -220,7 +220,7 @@ def print_results_paper(tools, param):
         print(line)
 
     # print TTE results
-    print_measurement("TTE (h)", line_header)
+    print_measurement("TTE (min)", line_header)
     print_headers(param, param_values)
     print(line)
     for tool in tools:

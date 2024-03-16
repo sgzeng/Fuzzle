@@ -11,9 +11,13 @@ RUN make && make install
 
 ### Create maze account
 SHELL ["/bin/bash", "-c"]
-RUN groupadd --gid 1000 maze \
-    && useradd --uid 1000 --gid maze --shell /bin/bash --create-home maze
-RUN echo 'maze  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers
+RUN if getent group maze > /dev/null 2>&1; then \
+      echo "Group maze already exists"; \
+    else \
+        groupadd --gid 1000 maze \
+        && useradd --uid 1000 --gid maze --shell /bin/bash --create-home maze && \
+        echo 'maze  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers; \
+    fi
 ENV PYENV_ROOT="/root/.pyenv"
 ENV PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
 RUN source ~/.bashrc && \

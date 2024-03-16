@@ -136,6 +136,7 @@ def run_tools(conf, works):
     time.sleep(duration*60 + 60) # sleep timeout + extra 1 min.
 
 def store_outputs(conf, out_dir, works):
+    duration = int(conf['Duration'])
     # First, collect testcases in /home/maze/outputs
     for i in range(len(works)):
         algo, width, height, seed, num, cycle, gen, tool, epoch = works[i]
@@ -148,7 +149,7 @@ def store_outputs(conf, out_dir, works):
         cmd = 'python3 /home/maze/tools/get_tcs.py /home/maze/outputs'
         run_cmd_in_docker(container, cmd)
 
-    time.sleep(60)
+    time.sleep(duration)
 
     # Next, store outputs to host filesystem
     for i in range(len(works)):
@@ -169,7 +170,7 @@ def store_outputs(conf, out_dir, works):
         out_path = os.path.join(out_dir, maze, '%s-%d' % (tool, epoch), 'result')
         cmd = CP_RESULT_CMD % (container, out_path)
         run_cmd(cmd)
-    time.sleep(60)
+    time.sleep(duration * 2)
 
 def store_coverage(conf, out_dir, works):
     duration = int(conf['Duration'])
@@ -196,7 +197,7 @@ def store_coverage(conf, out_dir, works):
         cmd = '%s %s %s %s %s %s' % (script, tc_dir, src_dir, src_name, maze_tool, duration)
         run_cmd_in_docker(container, cmd)
 
-    time.sleep(duration)
+    time.sleep(duration * 60)
 
     # Store coverage results to host filesystem
     for i in range(len(works)):
@@ -215,7 +216,7 @@ def store_coverage(conf, out_dir, works):
         cmd = CP_FRCON_CMD % (container, '/home/maze/outputs/cov_gcov_' + maze_tool, out_path)
         run_cmd(cmd)
 
-    time.sleep(60)
+    time.sleep(duration)
 
 def kill_containers(works):
     for i in range(len(works)):

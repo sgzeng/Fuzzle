@@ -131,7 +131,7 @@ def copy_testcases(out_dir, works):
         run_cmd(cmd)
         cmd = CHOWN_CMD % '/home/maze/outputs'
         run_cmd_in_docker(container, cmd)
-    time.sleep(30)
+    time.sleep(120)
 
 def store_coverage(conf, out_dir, works):
     duration = int(conf['Duration'])
@@ -158,7 +158,7 @@ def store_coverage(conf, out_dir, works):
         cmd = '%s %s %s %s %s %s' % (script, tc_dir, src_dir, src_name, maze_tool, duration)
         run_cmd_in_docker(container, cmd)
 
-    time.sleep(duration)
+    time.sleep(duration * 2)
 
     # Store coverage results to host filesystem
     for i in range(len(works)):

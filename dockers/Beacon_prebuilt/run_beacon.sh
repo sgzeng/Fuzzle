@@ -20,10 +20,8 @@ fi
 
 pushd $WORKDIR
 cp ${MAZE_DIR}/src/${PROGRAM_NAME}.c ./file.c
-ABORT_LINE=`awk '/func_bug\(input/ { print NR }' file.c`
-echo 'file.c:'$ABORT_LINE > $TMP_DIR/BBtargets.txt
 ABORT_LINE=`awk '/abort*/ { print NR }' file.c`
-echo 'file.c:'$ABORT_LINE >> $TMP_DIR/BBtargets.txt
+echo 'file.c:'$ABORT_LINE >> BBtargets.txt
 
 # 2.3.1 Generate bitcode file
 $CLANGDIR/clang -g -c -emit-llvm file.c -o file.bc
@@ -113,5 +111,9 @@ ulimit -c 0
 touch $WORKDIR/.start
 
 # fuzz
-nohup timeout $TIMEOUT python3 ${TOOL_DIR}/visualize_maze_cov.py ${MAZE_DIR}/txt/${MAZE_TXT}.txt ${COV_DIR}/accumulated_counter $MAZE_SIZE > ${OUT_DIR}/visualize.log 2>&1 &
+nohup timeout $TIMEOUT python3 ${TOOL_DIR}/visualize_maze_cov.py ${MAZE_DIR}/txt/${MAZE_TXT}.txt ${COV_DIR}/accumulated_counter $MAZE_SIZE ${OUT_DIR}/crashes > ${OUT_DIR}/visualize.log 2>&1 &
 nohup timeout $TIMEOUT $BEACON/afl-fuzz -t 2000+ -m none -i $IN_DIR -o $OUT_DIR -d -- ${WORKDIR}/file.bin_instrumented_wrapper > ${OUT_DIR}/beacon.log 2>&1 &
+
+# Wait for the timeout and kill the container
+sleep 1s
+sleep $TIMEOUT && touch $WORKDIR/.done

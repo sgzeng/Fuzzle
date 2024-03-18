@@ -1,6 +1,7 @@
 import math
 import os
 import shutil
+import signal
 import sys
 import traceback
 from PIL import Image, ImageColor
@@ -81,30 +82,40 @@ def save_image(grid, out_path, scale_factor=10, dpi=(200, 200)):
                     pixels[x*scale_factor + dx, y*scale_factor + dy] = tuple(rgb_color)
     img.save(out_path)
 
-def main(maze_txt, counter_file, out_path, size):
+def visualize_maze_cov(maze_txt, counter_file, out_path, size):
     matrix = get_matrix(maze_txt)
     hsl_matrix = visualize_coverage(matrix, counter_file, size)
     save_image(hsl_matrix, out_path)
+
+def monitor_crashes(crash_folder):
+    def notify_kill():
+        print('Found crash, Killing the docker container')
+        os.system("touch /home/maze/workspace/.done")
+    if not os.path.isdir(crash_folder):
+        return
+    for file in os.listdir(crash_folder):
+        if file.startswith('id:'):
+            notify_kill()
+            break
 
 if __name__ == '__main__':
     maze_txt = sys.argv[1]
     counter_file = sys.argv[2]
     out_dir = os.path.dirname(counter_file)
     size = int(math.sqrt(int(sys.argv[3])))
+    crash_dir = sys.argv[4]
 
-    if len(sys.argv) == 5:
-        out_file = sys.argv[4]
-        main(maze_txt, counter_file, out_file, size)
-        sys.exit(0)
-    
     start_time = time.time()
     while True:
         time.sleep(59)
         try:
+            monitor_crashes(crash_dir)
             current_time = time.time()
             elapsed_time = int(current_time - start_time)
-            shutil.copy(counter_file, '{}/{}.txt'.format(out_dir, elapsed_time))
-            main(maze_txt, counter_file, '{}/{}.png'.format(out_dir, elapsed_time) , size)
+            counter_file_copy = '{}/{}.txt'.format(out_dir, elapsed_time)
+            if os.path.getsize(counter_file) > 0:
+                shutil.copy(counter_file, counter_file_copy)
+                visualize_maze_cov(maze_txt, counter_file_copy, '{}/{}.png'.format(out_dir, elapsed_time) , size)
         except Exception as e:
             with open('{}/error_{}.txt'.format(out_dir, elapsed_time), 'w') as f:
                 traceback.print_exc(file=f) 

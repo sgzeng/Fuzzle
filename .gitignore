@@ -3,5 +3,5 @@
 .vscode/
 config
 programs.list
-out/
+out*/
 *DS_Store

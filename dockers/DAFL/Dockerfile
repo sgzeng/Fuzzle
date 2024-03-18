@@ -52,6 +52,7 @@ COPY setup_smake.sh /home/maze/script/setup_smake.sh
 WORKDIR /home/maze/script
 RUN ./setup_smake.sh
 
+USER maze
 # Setup Sparrow
 ARG DEBIAN_FRONTEND=noninteractive
 ENV NO_ARCH_OPT=1
@@ -73,11 +74,10 @@ RUN ./setup_DAFL.sh
 ENV AFL_SKIP_CPUFREQ=1
 ENV AFL_TRY_AFFINITY=1
 ENV AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
-USER maze
 RUN sudo chown -R maze:maze /home/maze
 
 # Add scripts
-ADD visualize_maze_cov.py /home/maze/tools/visualize_maze_cov.py
+ADD monitor.py /home/maze/tools/visualize_maze_cov.py
 ADD get_coverage.sh /home/maze/tools/get_coverage.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD convert_to_cov_code.py /home/maze/tools/convert_to_cov_code.py

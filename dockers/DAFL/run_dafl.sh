@@ -70,5 +70,9 @@ ulimit -c 0
 touch $WORKDIR/.start
 
 # fuzz
-nohup timeout $TIMEOUT python3 ${TOOL_DIR}/visualize_maze_cov.py ${MAZE_DIR}/txt/${MAZE_TXT}.txt ${COV_DIR}/accumulated_counter $MAZE_SIZE > ${OUT_DIR}/visualize.log 2>&1 &
+nohup timeout $TIMEOUT python3 ${TOOL_DIR}/visualize_maze_cov.py ${MAZE_DIR}/txt/${MAZE_TXT}.txt ${COV_DIR}/accumulated_counter $MAZE_SIZE ${OUT_DIR}/crashes > ${OUT_DIR}/visualize.log 2>&1 &
 nohup timeout $TIMEOUT /home/maze/fuzzer/DAFL/afl-fuzz -t 2000+ -m none -d -i $SEED_DIR -o $OUT_DIR -- /home/maze/workspace/dafl-input/file_dafl  > ${OUT_DIR}/dafl.log 2>&1 &
+
+# Wait for the timeout and kill the container
+sleep 1s
+sleep $TIMEOUT && touch $WORKDIR/.done

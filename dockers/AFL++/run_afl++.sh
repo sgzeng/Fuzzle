@@ -42,5 +42,9 @@ ulimit -c 0
 # Create dummy file to indicate running start
 touch $WORKDIR/.start
 
-nohup timeout $TIMEOUT python3 ${TOOL_DIR}/visualize_maze_cov.py ${MAZE_DIR}/txt/${MAZE_TXT}.txt ${COV_DIR}/accumulated_counter $MAZE_SIZE > ${OUT_DIR}/visualize.log 2>&1 &
+nohup timeout $TIMEOUT python3 ${TOOL_DIR}/visualize_maze_cov.py ${MAZE_DIR}/txt/${MAZE_TXT}.txt ${COV_DIR}/accumulated_counter $MAZE_SIZE ${OUT_DIR}/default/crashes > ${OUT_DIR}/visualize.log 2>&1 &
 nohup timeout $TIMEOUT afl-fuzz -t 2000+ -m none -i $IN_DIR -o $OUT_DIR -c $AFL_CMPLOG_BIN -- $AFL_BIN > ${OUT_DIR}/aflpp.log 2>&1 &
+
+# Wait for the timeout and kill the container
+sleep 1s
+sleep $TIMEOUT && touch $WORKDIR/.done

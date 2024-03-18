@@ -30,7 +30,7 @@ RUN mkdir -p /home/maze/workspace
 ADD run_mazerunner-wo-policy.sh /home/maze/tools/run_mazerunner-wo-policy.sh
 ADD run_mazerunner-w-policy.sh /home/maze/tools/run_mazerunner-w-policy.sh
 ADD utils.py /home/maze/tools/utils.py
-ADD visualize_maze_cov.py /home/maze/tools/visualize_maze_cov.py
+ADD monitor.py /home/maze/tools/visualize_maze_cov.py
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD convert_to_cov_code.py /home/maze/tools/convert_to_cov_code.py
 ADD get_coverage.sh /home/maze/tools/get_coverage.sh

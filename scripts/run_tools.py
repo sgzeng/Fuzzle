@@ -244,6 +244,12 @@ def remove_container(task):
     run_cmd(cmd)    
 
 def run_experiment(task, cpu_id):
+    algo, width, height, seed, num, cycle, gen, tool, epoch = task
+    maze = get_put_name(algo, width, height, seed, num, cycle, gen)
+    maze_out_path = os.path.join(out_dir, maze, '%s-%d' % (tool, epoch))
+    if os.path.isdir(maze_out_path):
+        print(f"Skipping {tool}-{epoch} for {maze} as it already exists")
+        return
     start_container(conf, task, cpu_id)
     run_tool(conf, task)
     resume_container(conf, task)

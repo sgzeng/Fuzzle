@@ -85,14 +85,6 @@ def get_targets(conf):
 
     return targets
 
-def fetch_works(targets):
-    works = []
-    for i in range(NUM_WORKERS):
-        if len(targets) <= 0:
-            break
-        works.append(targets.pop(0))
-    return works
-
 def start_container(conf, task, i):
     algo, width, height, seed, num, cycle, gen, tool, epoch = task
     if tool == 'afl++':

@@ -3,7 +3,9 @@ ENV DEBIAN_FRONTEND="noninteractive"
 
 # Install dependencies
 RUN apt-get update -y && \
-apt-get install -y sudo graphviz libgraphviz-dev
+apt-get install -y sudo graphviz libgraphviz-dev \
+libfreetype6-dev libqhull-dev libopenblas-dev \
+build-essential libfreetype6-dev libqhull-dev pkg-config
 WORKDIR /workdir/symsan
 RUN git clean -f && git checkout . && git pull
 WORKDIR /workdir/symsan/build
@@ -21,8 +23,16 @@ RUN if getent group maze > /dev/null 2>&1; then \
 ENV PYENV_ROOT="/root/.pyenv"
 ENV PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
 RUN source ~/.bashrc && \
+    pyenv install pypy3.10-7.3.12 && \
     pyenv global 3.11.5 && \
-    pip install pillow matplotlib networkx pygraphviz
+    pip install pillow matplotlib networkx pygraphviz && \
+    pyenv global pypy3.10-7.3.12 && \
+    pip install --upgrade pip && \
+    pip cache purge && \
+    pip install -r /workdir/symsan/mazerunner/requirements.txt && \
+    pip install z3-solver --force-reinstall --no-cache-dir
+RUN echo "pypy3.10-7.3.12" > /workdir/symsan/.python-version
+RUN pyenv global 3.11.5
 
 # Add scripts
 RUN mkdir -p /home/maze/tools

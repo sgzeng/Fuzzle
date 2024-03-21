@@ -1,4 +1,4 @@
-FROM mazerunner-fuzzle
+FROM mazerunner
 ENV DEBIAN_FRONTEND="noninteractive"
 
 # Install dependencies
@@ -23,16 +23,20 @@ RUN if getent group maze > /dev/null 2>&1; then \
 ENV PYENV_ROOT="/root/.pyenv"
 ENV PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
 RUN source ~/.bashrc && \
-    pyenv install pypy3.10-7.3.12 && \
-    pyenv global 3.11.5 && \
-    pip install pillow matplotlib networkx pygraphviz && \
     pyenv global pypy3.10-7.3.12 && \
     pip install --upgrade pip && \
     pip cache purge && \
     pip install -r /workdir/symsan/mazerunner/requirements.txt && \
     pip install z3-solver --force-reinstall --no-cache-dir
+WORKDIR /home/maze/workspace
+RUN source ~/.bashrc && \
+    pyenv global 3.11.5 && \
+    pip install --upgrade pip && \
+    pip cache purge && \
+    pip install pillow matplotlib networkx pygraphviz && \
+    pip install -r /workdir/symsan/mazerunner/requirements.txt && \
+    pip install z3-solver --force-reinstall --no-cache-dir
 RUN echo "pypy3.10-7.3.12" > /workdir/symsan/.python-version
-RUN pyenv global 3.11.5
 
 # Add scripts
 RUN mkdir -p /home/maze/tools
@@ -44,7 +48,6 @@ ADD monitor.py /home/maze/tools/visualize_maze_cov.py
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD convert_to_cov_code.py /home/maze/tools/convert_to_cov_code.py
 ADD get_coverage.sh /home/maze/tools/get_coverage.sh
-WORKDIR /home/maze/workspace
 
 RUN chown -R maze:maze /home/maze
 USER root

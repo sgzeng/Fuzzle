@@ -54,12 +54,15 @@ export MAZE_COV="${COV_DIR}/accumulated_counter"
 python3 -c "print('0\n' * ${MAZE_SIZE})" > $MAZE_COV
 
 ulimit -c 0
+
+nohup timeout $TIMEOUT python3 ${TOOL_DIR}/visualize_maze_cov.py ${MAZE_DIR}/txt/${MAZE_TXT}.txt ${COV_DIR}/accumulated_counter $MAZE_SIZE ${OUT_DIR}/mazerunner/crashes > ${OUT_DIR}/visualize.log 2>&1 &
+cd $MAZERUNNER_SRC && git pull
+git rev-parse HEAD &> $OUT_DIR/mazerunner_git.txt
 # Create dummy file to indicate running start
 touch $WORKDIR/.start
-
 # fuzz
-nohup timeout $TIMEOUT python3 ${TOOL_DIR}/visualize_maze_cov.py ${MAZE_DIR}/txt/${MAZE_TXT}.txt ${COV_DIR}/accumulated_counter $MAZE_SIZE ${OUT_DIR}/mazerunner/crashes > ${OUT_DIR}/visualize.log 2>&1 &
-cd $MAZERUNNER_SRC && nohup timeout $TIMEOUT python3 mazerunner/mazerunner.py -a explore -i $IN_DIR -m reachability -o $OUT_DIR -s $AFLGO_TARGET_DIR -- $BUILD_DIR/${PROGRAM_NAME}_symsan_NM > ${OUT_DIR}/mazerunner.log 2>&1 &
+cd $MAZERUNNER_SRC
+nohup timeout $TIMEOUT python3 $MAZERUNNER_SRC/mazerunner/mazerunner.py -a explore -i $IN_DIR -m reachability -o $OUT_DIR -s $AFLGO_TARGET_DIR -- $BUILD_DIR/${PROGRAM_NAME}_symsan_NM > ${OUT_DIR}/mazerunner.log 2>&1 &
 
 # Wait for the timeout and kill the container
 sleep 1s

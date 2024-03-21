@@ -27,6 +27,7 @@ CP_FRCON_CMD = 'docker cp %s:%s %s'
 MOVE_CMD = 'mv %s %s'
 REMOVE_CMD = 'rm %s %s %s %s'
 KILL_CMD = 'docker kill %s'
+STOP_CMD = 'docker stop %s'
 CHOWN_CMD = 'sudo chown -R maze:maze %s'
 
 def run_cmd(cmd_str):
@@ -155,9 +156,15 @@ def run_tool(conf, task):
     maze_size = str(int(width) * int(height))
     cmd = f'{script} {maze_dir} {bin_name} {duration} {maze_size} {maze_txt_name}'
     run_cmd_in_docker(container, cmd)
+    start_time = time.time()
     while not file_exists_in_container(container, '/home/maze/workspace/.done'):
+        curr_time = time.time()
+        if curr_time - start_time > duration * 60 + 60:
+            break
         time.sleep(60)
-    kill_container(task)
+    has_result = file_exists_in_container(container, '/home/maze/workspace/outputs/visualize.log')
+    stop_container(task)
+    return has_result
 
 def store_outputs(conf, out_dir, task):
     duration = int(conf['Duration'])
@@ -171,7 +178,7 @@ def store_outputs(conf, out_dir, task):
     cmd = 'python3 /home/maze/tools/get_tcs.py /home/maze/outputs'
     run_cmd_in_docker(container, cmd)
 
-    time.sleep(duration)
+    time.sleep(120)
 
     # Next, store outputs to host filesystem
     algo, width, height, seed, num, cycle, gen, tool, epoch = task
@@ -182,15 +189,15 @@ def store_outputs(conf, out_dir, task):
     container = '%s-%sx%s-%s-%s-%s-%s-%s-%d' % (algo, width, height, seed, num, cycle, gen, tool_, epoch)
     maze = get_put_name(algo, width, height, seed, num, cycle, gen)
     # copy the tc directory
-    out_path = os.path.join(out_dir, maze, '%s-%d' % (tool, epoch))
-    os.system('mkdir -p %s' % out_path)
-    cmd = CP_CMD % (container, out_path)
+    tc_out_path = os.path.join(out_dir, maze, '%s-%d' % (tool, epoch))
+    os.system('mkdir -p %s' % tc_out_path)
+    cmd = CP_CMD % (container, tc_out_path)
     run_cmd(cmd)
     # copy the result directory
-    out_path = os.path.join(out_dir, maze, '%s-%d' % (tool, epoch), 'result')
-    cmd = CP_RESULT_CMD % (container, out_path)
+    res_out_path = os.path.join(out_dir, maze, '%s-%d' % (tool, epoch), 'result')
+    cmd = CP_RESULT_CMD % (container, res_out_path)
     run_cmd(cmd)
-    time.sleep(duration)
+    time.sleep(60)
 
 def store_coverage(conf, out_dir, task):
     duration = int(conf['Duration'])
@@ -225,17 +232,22 @@ def store_coverage(conf, out_dir, task):
     container = '%s-%sx%s-%s-%s-%s-%s-%s-%d' % (algo, width, height, seed, num, cycle, gen, tool_, epoch)
     maze = get_put_name(algo, width, height, seed, num, cycle, gen)
     maze_tool = maze + '_%s_%d' % (tool_, epoch)
-    out_path = os.path.join(out_dir, maze)
-    cmd = CP_FRCON_CMD % (container, '/home/maze/outputs/cov_txt_' + maze_tool, out_path)
+    maze_out_path = os.path.join(out_dir, maze)
+    cmd = CP_FRCON_CMD % (container, '/home/maze/outputs/cov_txt_' + maze_tool, maze_out_path)
     run_cmd(cmd)
-    cmd = CP_FRCON_CMD % (container, '/home/maze/outputs/cov_gcov_' + maze_tool, out_path)
+    cmd = CP_FRCON_CMD % (container, '/home/maze/outputs/cov_gcov_' + maze_tool, maze_out_path)
     run_cmd(cmd)
 
-    time.sleep(duration)
+    time.sleep(60)
 
 def kill_container(task):
     container = get_container_name(task)
     cmd = KILL_CMD % container
+    run_cmd(cmd)
+
+def stop_container(task):
+    container = get_container_name(task)
+    cmd = STOP_CMD % container
     run_cmd(cmd)
 
 def remove_container(task):
@@ -251,7 +263,10 @@ def run_experiment(task, cpu_id):
         print(f"Skipping {tool}-{epoch} for {maze} as it already exists")
         return
     start_container(conf, task, cpu_id)
-    run_tool(conf, task)
+    has_result = run_tool(conf, task)
+    if not has_result:
+        print(f"Skipping {tool}-{epoch} for {maze} as it has no results")
+        return
     resume_container(conf, task)
     store_outputs(conf, out_dir, task)
     store_coverage(conf, out_dir, task)
@@ -261,7 +276,6 @@ def run_experiment(task, cpu_id):
 def main(conf_path, out_dir):
     os.system('mkdir -p %s' % out_dir)
     targets = get_targets(conf)
-    print(targets)
     cpus = [i for i in range(NUM_WORKERS)]
     with ThreadPoolExecutor(max_workers=NUM_WORKERS) as executor:
         futures = [executor.submit(run_experiment, t, cpus[i % len(cpus)]) for i, t in enumerate(targets)]

@@ -61,7 +61,6 @@ git rev-parse HEAD &> $OUT_DIR/mazerunner_git.txt
 # Create dummy file to indicate running start
 touch $WORKDIR/.start
 # fuzz
-cd $MAZERUNNER_SRC
 nohup timeout $TIMEOUT python3 $MAZERUNNER_SRC/mazerunner/mazerunner.py -a explore -i $IN_DIR -m reachability -o $OUT_DIR -s $AFLGO_TARGET_DIR -- $BUILD_DIR/${PROGRAM_NAME}_symsan_NM > ${OUT_DIR}/mazerunner.log 2>&1 &
 
 # Wait for the timeout and kill the container

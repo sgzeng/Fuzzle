@@ -36,7 +36,7 @@ RUN source ~/.bashrc && \
     pip install pillow matplotlib networkx pygraphviz && \
     pip install -r /workdir/symsan/mazerunner/requirements.txt && \
     pip install z3-solver --force-reinstall --no-cache-dir
-RUN echo "pypy3.10-7.3.12" > /workdir/symsan/.python-version
+RUN echo "3.11.5" > /workdir/symsan/.python-version
 
 # Add scripts
 RUN mkdir -p /home/maze/tools

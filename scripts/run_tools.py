@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import json
 import time
@@ -102,7 +103,8 @@ def start_container(conf, task, i):
     run_cmd(cmd)
     cmd = CHOWN_CMD % '/home/maze/maze'
     run_cmd_in_docker(container, cmd)
-    
+    time.sleep(10)
+
 def resume_container(conf, task):
     algo, width, height, seed, num, cycle, gen, tool, epoch = task
     if tool == 'afl++':
@@ -113,6 +115,7 @@ def resume_container(conf, task):
     container = '%s-%sx%s-%s-%s-%s-%s-%s-%d' % (algo, width, height, seed, num, cycle, gen, tool_, epoch)
     cmd = START_CMD % container
     run_cmd(cmd)
+    time.sleep(10)
 
 def get_maze_name(algo, width, height, seed, num, cycle, gen):
     return '%s_%sx%s_%s_%s' % (algo, width, height, seed, num)
@@ -155,11 +158,13 @@ def run_tool(conf, task):
     maze_dir = '/home/maze/maze'
     maze_size = str(int(width) * int(height))
     cmd = f'{script} {maze_dir} {bin_name} {duration} {maze_size} {maze_txt_name}'
-    run_cmd_in_docker(container, cmd)
+    while not file_exists_in_container(container, '/home/maze/workspace/.start'):
+        run_cmd_in_docker(container, cmd)
+        time.sleep(60)
     start_time = time.time()
     while not file_exists_in_container(container, '/home/maze/workspace/.done'):
         curr_time = time.time()
-        if curr_time - start_time > duration * 60 + 60:
+        if curr_time - start_time > duration * 60:
             break
         time.sleep(60)
     has_result = file_exists_in_container(container, '/home/maze/workspace/outputs/visualize.log')
@@ -190,7 +195,7 @@ def store_outputs(conf, out_dir, task):
     maze = get_put_name(algo, width, height, seed, num, cycle, gen)
     # copy the tc directory
     tc_out_path = os.path.join(out_dir, maze, '%s-%d' % (tool, epoch))
-    os.system('mkdir -p %s' % tc_out_path)
+    os.makedirs(tc_out_path, exist_ok=True)
     cmd = CP_CMD % (container, tc_out_path)
     run_cmd(cmd)
     # copy the result directory
@@ -220,7 +225,6 @@ def store_coverage(conf, out_dir, task):
     src_name = maze + is_klee
     cmd = '%s %s %s %s %s %s' % (script, tc_dir, src_dir, src_name, maze_tool, duration)
     run_cmd_in_docker(container, cmd)
-
     time.sleep(duration * 2)
 
     # Store coverage results to host filesystem
@@ -237,8 +241,7 @@ def store_coverage(conf, out_dir, task):
     run_cmd(cmd)
     cmd = CP_FRCON_CMD % (container, '/home/maze/outputs/cov_gcov_' + maze_tool, maze_out_path)
     run_cmd(cmd)
-
-    time.sleep(60)
+    time.sleep(10)
 
 def kill_container(task):
     container = get_container_name(task)
@@ -259,9 +262,15 @@ def run_experiment(task, cpu_id):
     algo, width, height, seed, num, cycle, gen, tool, epoch = task
     maze = get_put_name(algo, width, height, seed, num, cycle, gen)
     maze_out_path = os.path.join(out_dir, maze, '%s-%d' % (tool, epoch))
-    if os.path.isdir(maze_out_path):
+    if os.path.isfile(os.path.join(maze_out_path, 'outputs', '.done')):
         print(f"Skipping {tool}-{epoch} for {maze} as it already exists")
         return
+    elif os.path.isdir(maze_out_path):
+        print(f"removing {maze_out_path} because .done file is missing")
+        try:
+            shutil.rmtree(maze_out_path)
+        except Exception as e:
+            print(f"Error removing directory {maze_out_path}: {e}")
     start_container(conf, task, cpu_id)
     has_result = run_tool(conf, task)
     if not has_result:
@@ -273,8 +282,8 @@ def run_experiment(task, cpu_id):
     kill_container(task)
     remove_container(task)
     
-def main(conf_path, out_dir):
-    os.system('mkdir -p %s' % out_dir)
+def main():
+    os.makedirs(out_dir, exist_ok=True)
     targets = get_targets(conf)
     cpus = [i for i in range(NUM_WORKERS)]
     with ThreadPoolExecutor(max_workers=NUM_WORKERS) as executor:
@@ -287,4 +296,4 @@ if __name__ == '__main__':
     conf_path = sys.argv[1]
     out_dir = sys.argv[2]
     conf = load_config(conf_path)
-    main(conf_path, out_dir)
+    main()

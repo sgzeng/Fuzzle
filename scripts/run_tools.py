@@ -1,4 +1,5 @@
 import os
+import queue
 import shutil
 import sys
 import json
@@ -53,6 +54,7 @@ def run_cmd_in_docker(container, cmd_str):
 
 def file_exists_in_container(container, file_path):
     command = TEST_CMD % (container, file_path)
+    print("[*] Checking if %s exists in container %s" % (file_path, container))
     result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if "YES" in result.stdout:
         return True
@@ -168,8 +170,9 @@ def run_tool(conf, task):
         if curr_time - start_time > duration * 60:
             break
         time.sleep(60)
+    has_result = file_exists_in_container(container, '/home/maze/workspace/.done')
     stop_container(task)
-    return file_exists_in_container(container, '/home/maze/workspace/.done')
+    return has_result
 
 def store_outputs(conf, out_dir, task):
     duration = int(conf['Duration'])
@@ -261,7 +264,7 @@ def remove_container(task):
     run_cmd(cmd)    
     time.sleep(10)
 
-def run_experiment(task, cpu_id):
+def run_experiment(task, cpu_queue):
     algo, width, height, seed, num, cycle, gen, tool, epoch = task
     maze = get_put_name(algo, width, height, seed, num, cycle, gen)
     maze_out_path = os.path.join(out_dir, maze, '%s-%d' % (tool, epoch))
@@ -274,23 +277,27 @@ def run_experiment(task, cpu_id):
             shutil.rmtree(maze_out_path)
         except Exception as e:
             print(f"Error removing directory {maze_out_path}: {e}")
+    cpu_id = cpu_queue.get()
     start_container(conf, task, cpu_id)
     has_result = run_tool(conf, task)
-    if not has_result:
-        print(f"Skipping {tool}-{epoch} for {maze} as it has no results")
-        return
-    resume_container(conf, task)
-    store_outputs(conf, out_dir, task)
-    store_coverage(conf, out_dir, task)
-    kill_container(task)
+    if has_result:
+        resume_container(conf, task)
+        store_outputs(conf, out_dir, task)
+        store_coverage(conf, out_dir, task)
+        kill_container(task)
     remove_container(task)
+    cpu_queue.put(cpu_id)
     
 def main():
     os.makedirs(out_dir, exist_ok=True)
     targets = get_targets(conf)
-    cpus = [i for i in range(NUM_WORKERS)]
+    
+    cpu_queue = queue.Queue()
+    for i in range(NUM_WORKERS):
+        cpu_queue.put(i)
+    
     with ThreadPoolExecutor(max_workers=NUM_WORKERS) as executor:
-        futures = [executor.submit(run_experiment, t, cpus[i % len(cpus)]) for i, t in enumerate(targets)]
+        futures = [executor.submit(run_experiment, t, cpu_queue) for i, t in enumerate(targets)]
         for future in as_completed(futures):
             future.result()
 

@@ -22,12 +22,6 @@ RUN if getent group maze > /dev/null 2>&1; then \
     fi
 ENV PYENV_ROOT="/root/.pyenv"
 ENV PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
-RUN source ~/.bashrc && \
-    pyenv global pypy3.10-7.3.12 && \
-    pip install --upgrade pip && \
-    pip cache purge && \
-    pip install -r /workdir/symsan/mazerunner/requirements.txt && \
-    pip install z3-solver --force-reinstall --no-cache-dir
 WORKDIR /home/maze/workspace
 RUN source ~/.bashrc && \
     pyenv global 3.11.5 && \

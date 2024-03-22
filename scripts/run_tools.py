@@ -167,9 +167,8 @@ def run_tool(conf, task):
         if curr_time - start_time > duration * 60:
             break
         time.sleep(60)
-    has_result = file_exists_in_container(container, '/home/maze/workspace/outputs/visualize.log')
     stop_container(task)
-    return has_result
+    return file_exists_in_container(container, '/home/maze/workspace/.done')
 
 def store_outputs(conf, out_dir, task):
     duration = int(conf['Duration'])

@@ -98,6 +98,7 @@ def start_container(conf, task, i):
     # Spawn a container
     cmd = SPAWN_CMD % (i, i+LOGICAL_CPU_NUM/2, container, image)
     run_cmd(cmd)
+    time.sleep(10)
     # Copy maze in the container
     cmd = CP_MAZE_CMD % (conf['MazeDir'], container)
     run_cmd(cmd)
@@ -224,7 +225,7 @@ def store_coverage(conf, out_dir, task):
     src_name = maze + is_klee
     cmd = '%s %s %s %s %s %s' % (script, tc_dir, src_dir, src_name, maze_tool, duration)
     run_cmd_in_docker(container, cmd)
-    time.sleep(duration * 2)
+    time.sleep(duration + 60)
 
     # Store coverage results to host filesystem
     algo, width, height, seed, num, cycle, gen, tool, epoch = task
@@ -246,16 +247,19 @@ def kill_container(task):
     container = get_container_name(task)
     cmd = KILL_CMD % container
     run_cmd(cmd)
+    time.sleep(10)
 
 def stop_container(task):
     container = get_container_name(task)
     cmd = STOP_CMD % container
     run_cmd(cmd)
+    time.sleep(10)
 
 def remove_container(task):
     container = get_container_name(task)
     cmd = RM_CMD % container
     run_cmd(cmd)    
+    time.sleep(10)
 
 def run_experiment(task, cpu_id):
     algo, width, height, seed, num, cycle, gen, tool, epoch = task

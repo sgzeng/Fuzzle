@@ -1,4 +1,4 @@
-*_benchmark/
+*benchmark/
 **/__pycache__/
 .vscode/
 config

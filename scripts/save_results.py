@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import csv
+import subprocess
 from collections import defaultdict
 from glob import glob
 
@@ -21,15 +22,43 @@ def write_row_headers(writer):
     writer.writerow(headers)
 
 def write_rows(writer, filenames, time):
-    for file_path in filenames:
-        if not '{}h'.format(time) in file_path:
+    def sort_helper(fp):
+        basename = os.path.basename(fp)
+        file_number = os.path.splitext(basename)[0]
+        if 'error' in file_number:
+            return -1
+        return -int(file_number)
+    
+    def get_target_visited_times(cov_file, msize):
+        visited_fun_count = 0
+        with open(cov_file) as f:
+            lines = f.readlines()
+            if len(lines) == msize + 1:
+                visited_fun_count = int(lines[-2].strip())
+            elif len(lines) == msize:
+                visited_fun_count = int(lines[-1].strip())
+        return visited_fun_count
+    
+    for summary_txt in filenames:
+        if not '{}h'.format(time) in summary_txt:
             continue
-        with open(file_path) as f:
+        maze = summary_txt.split('/')[-1].strip('.txt\n').split('_')
+        tool =maze[7]
+        if tool == 'aflpp':
+            tool_ = 'afl++'
+        else:
+            tool_ = tool
+        tool_dir = f'{tool_}-{maze[8]}'
+        exp_dir = os.path.dirname(os.path.dirname(summary_txt))
+        seeds_dir = os.path.join(exp_dir, tool_dir, 'outputs')
+        msize = int(maze[1].split('x')[0])
+        msize = msize * msize
+        has_neg_ts = search_neg_ts(seeds_dir)
+        with open(summary_txt) as f:
             row = []
             numb = 0
             for line in f:
                 if numb == 0:
-                    maze = file_path.split('/')[-1].strip('.txt\n').split('_')
                     for idx in range(len(maze)):
                         if idx < 2:
                             row.append(maze[idx])
@@ -44,14 +73,136 @@ def write_rows(writer, filenames, time):
                     if len(maze) < 10:
                         row.append(0)
                 if numb > 0 and numb < 5:
-                    coverage = line.split(':')[1].split('%')[0]
+                    try:
+                        coverage = line.split(':')[1].split('%')[0]
+                    except:
+                        coverage = 0
                     row.append(float(coverage))
-                if '/home/maze/outputs/' in line and '_crash_abort' in line:
+                if '/home/maze/outputs/' in line and '_crash_abort' in line and not has_neg_ts:
                     time_taken = line.strip('/home/maze/outputs/').split('_')[0]
                     row.append(float(time_taken))
                     break
                 numb = numb + 1
+            if len(row) < 12:
+                # try to get the time taken to first crash from the maze cov
+                maze_cov_dir = os.path.join(exp_dir, tool_dir, 'result', 'maze_cov')
+                maze_cov_files = glob(f'{maze_cov_dir}/*.txt')
+                sorted_maze_cov_files = sorted(maze_cov_files, key=sort_helper)
+                last_cov_file = os.path.join(maze_cov_dir, 'accumulated_counter')
+                if os.path.getsize(last_cov_file) == 0 and maze_cov_files:
+                    for cov_file in sorted_maze_cov_files:
+                        if os.path.getsize(cov_file) > 0:
+                            last_cov_file = cov_file
+                            # print(f'using {last_cov_file}')
+                            break
+                assert os.path.getsize(last_cov_file) > 0, f'file {last_cov_file} is empty'
+                targer_count = get_target_visited_times(last_cov_file, msize)
+                if tool == 'aflpp':
+                    crash_dir = os.path.join(exp_dir, tool_dir, 'result', 'default', 'crashes')
+                    queue_dir = os.path.join(exp_dir, tool_dir, 'result', 'default', 'queue')
+                elif 'mazerunner' in tool:
+                    crash_dir = os.path.join(exp_dir, tool_dir, 'result', 'mazerunner', 'crashes')
+                    queue_dir = os.path.join(exp_dir, tool_dir, 'result', 'mazerunner', 'queue')
+                else:
+                    crash_dir = os.path.join(exp_dir, tool_dir, 'result', 'crashes')
+                    queue_dir = os.path.join(exp_dir, tool_dir, 'result', 'queue')
+                crash_tcs = set()
+                for tc in os.listdir(crash_dir):
+                    if 'id' in tc:
+                        crash_tcs.add(tc)
+                if targer_count > 0 or crash_tcs:
+                    bin_path = os.path.join(benchmark_dir, 'bin', f'{os.path.basename(exp_dir)}.bin')
+                    crash_file = search_crash(seeds_dir, bin_path)
+                    if crash_file is not None:
+                        tte = float(crash_file.split('_')[0])
+                        if has_neg_ts and tte < 0:
+                            start_time = get_start_time(queue_dir)
+                            tte = get_tte_from_crash_dir(crash_dir, start_time)
+                            if tte == float('inf'):
+                                tte = get_tte_from_queue_dir(queue_dir, start_time, bin_path)
+                            assert tte > 0 and tte != float('inf'), f'tte is {tte}'
+                        row.append(tte)
+                    elif 'beacon' in tool:
+                        for cov_file in reversed(sorted_maze_cov_files):
+                            target_visited_times = get_target_visited_times(cov_file, msize)
+                            if target_visited_times > 0:
+                                tte = float(os.path.splitext(os.path.basename(cov_file))[0])
+                                row.append(tte)
+                                break
         writer.writerow(row)
+
+def search_neg_ts(queue_dir):
+    for tc in os.listdir(queue_dir):
+        if '_tc' not in tc:
+            continue
+        ts = float(tc.split('_')[0])
+        if ts < 0: 
+            return True
+    return False
+
+def get_tte_from_crash_dir(crash_dir, start_time):
+    tte = float('inf')
+    tcs = os.listdir(crash_dir)
+    if 'README.txt' in tcs:
+        tcs.remove('README.txt')
+    if not tcs:
+        return tte
+    for tc in tcs:
+        if 'id:' not in tc:
+            continue
+        if 'ts:' in tc:
+            tte = min(tte, float(tc.split('ts:')[1].split(',')[0])/1000)
+        elif 'time:' in tc:
+            tte = min(tte, float(tc.split('time:')[1].split(',')[0])/1000)
+        else:
+            ts = os.path.getmtime(os.path.join(crash_dir, tc)) - start_time
+            tte = min(tte, ts)
+    return tte    
+
+def get_tte_from_queue_dir(queue_dir, start_time, bin_path):
+    tc = search_crash(queue_dir, bin_path)
+    assert tc is not None, f'no crash found in {queue_dir}'
+    return start_time - os.path.getmtime(os.path.join(queue_dir, tc))
+
+def get_start_time(queue_dir):
+    times = []
+    for tc in os.listdir(queue_dir):
+        if 'id:' in tc:
+            full_path = os.path.join(queue_dir, tc)
+            times.append(os.path.getmtime(full_path))
+    if times:
+        earliest_time = min(times)
+        return earliest_time
+    else:
+        return None
+
+def search_crash(queue_dir, bin_path):
+    # print(f'searching for crash in {queue_dir}')
+    def sort_helper(fn):
+        if '_crash' in fn:
+            return float(fn.split('_')[0])
+        if 'id:' not in fn or '_tc' not in fn:
+            return -1
+        return float(fn.split('_')[0]) * 1000
+
+    sorted_tcs = sorted(os.listdir(queue_dir), key=sort_helper)
+    for tc in sorted_tcs:
+        if '_crash' in tc:
+            return tc
+        if 'id:' not in tc or '_tc' not in tc:
+            continue
+        fp = os.path.join(queue_dir, tc)
+        with open(fp, 'rb') as testcase:
+            try:
+                result = subprocess.run([bin_path], stdin=testcase, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
+                if result.returncode != 0:
+                    # print(f"Crash found in file: {tc}")
+                    return tc
+            except subprocess.TimeoutExpired:
+                print(f"Execution timed out for file: {tc}")
+            except Exception as e:
+                print(f"Error executing file {tc}: {e}")
+    return None
 
 # group by parameter
 def group_param(data, param):
@@ -102,7 +253,7 @@ def get_TTE(data):
         return '-'
     else:
         average_TTE = (TTE_sum / bug_count)/60
-        return '%02.1f' % average_TTE
+        return '%02.2f' % average_TTE
 
 def print_results_fuzzer(data, tool, param):
     print("##############################################")
@@ -227,8 +378,8 @@ def print_results_paper(tools, param):
         print_TTE(tools[tool], tool, param, param_values)
         print(line)
 
-def parse_csv(file_path, param, time, mode):
-    with open(file_path, 'r') as f:
+def parse_csv(summary_txt, param, time, mode):
+    with open(summary_txt, 'r') as f:
         csv_reader = csv.DictReader(f)
 
         # filter data by time
@@ -313,8 +464,10 @@ def main(file_list, out_path, param, time, mode):
     parse_csv(out_path, param, time, mode)
 
 if __name__ == '__main__':
+    global benchmark_dir
     fuzz_output_dir = sys.argv[1]
     conf = load_config(sys.argv[2])
+    benchmark_dir = conf['MazeDir']
     file_list = get_coverage_files(fuzz_output_dir)
     param = sys.argv[3]
     time = sys.argv[4]

@@ -269,7 +269,7 @@ def run_experiment(task, cpu_queue):
     maze = get_put_name(algo, width, height, seed, num, cycle, gen)
     maze_out_path = os.path.join(out_dir, maze, '%s-%d' % (tool, epoch))
     if os.path.isfile(os.path.join(maze_out_path, 'outputs', '.done')):
-        print(f"Skipping {tool}-{epoch} for {maze} as it already exists")
+        print(f"Skipping {tool}-{epoch} for {maze} as it already exists\n")
         return
     elif os.path.isdir(maze_out_path):
         print(f"removing {maze_out_path} because .done file is missing")

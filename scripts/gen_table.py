@@ -17,11 +17,13 @@ def parse_log(log_content):
             data[current_fuzzer][current_generator]['Bugs (%)'] = line.split(':')[1].strip()
         elif 'TTE (min):' in line:
             data[current_fuzzer][current_generator]['TTE (min)'] = line.split(':')[1].strip()
+        elif 'Execs:' in line:
+            data[current_fuzzer][current_generator]['Execs'] = line.split(':')[1].strip()
     return data
 
 def format_to_markdown(data):
-    table_header = "| CVE             | Fuzzer   | Coverage (%) | Bugs (%) | TTE (min) |\n"
-    table_divider = "|-----------------|----------|--------------|----------|---------|\n"
+    table_header = "| CVE             | Fuzzer   | Coverage (%) | Bugs (%) | TTE (min) | Execs |\n"
+    table_divider ="|-----------------|----------|--------------|----------|-----------|-------|\n"
     table = table_header + table_divider
     # Sorting the data
     fuzzers = sorted(data.keys())
@@ -33,9 +35,10 @@ def format_to_markdown(data):
                 coverage = data[fuzzer][gen]['Coverage (%)']
                 bugs = data[fuzzer][gen]['Bugs (%)']
                 tte = data[fuzzer][gen]['TTE (min)']
-                table += f"| {gen} | {fuzzer} | {coverage} | {bugs} | {tte} |\n"
+                execs = data[fuzzer][gen]['Execs']
+                table += f"| {gen} | {fuzzer} | {coverage} | {bugs} | {tte} | {execs} |\n"
             else:
-                table += f"| {gen} | {fuzzer} | - | - | - |\n"
+                table += f"| {gen} | {fuzzer} | - | - | - | - |\n"
     return table
 
 if __name__ == '__main__':

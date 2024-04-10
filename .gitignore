@@ -5,3 +5,4 @@ config
 programs.list
 out*/
 *DS_Store
+results/

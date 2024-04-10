@@ -18,7 +18,7 @@ def write_row_headers(writer):
     headers = ["Algorithm", "Size", "Seed", "Cycle Proportion",
      "Generator", "Tool", "Epoch",
      "Lines executed", "Branches executed", "Taken at least once",
-     "Calls executed", "Time taken to first crash"]
+     "Calls executed", "Time taken to first crash", "Execs taken to first crash"]
     writer.writerow(headers)
 
 def write_rows(writer, filenames, time):
@@ -53,6 +53,15 @@ def write_rows(writer, filenames, time):
         seeds_dir = os.path.join(exp_dir, tool_dir, 'outputs')
         msize = int(maze[1].split('x')[0])
         msize = msize * msize
+        if tool == 'aflpp':
+            crash_dir = os.path.join(exp_dir, tool_dir, 'result', 'default', 'crashes')
+            queue_dir = os.path.join(exp_dir, tool_dir, 'result', 'default', 'queue')
+        elif 'mazerunner' in tool:
+            crash_dir = os.path.join(exp_dir, tool_dir, 'result', 'mazerunner', 'crashes')
+            queue_dir = os.path.join(exp_dir, tool_dir, 'result', 'mazerunner', 'queue')
+        else:
+            crash_dir = os.path.join(exp_dir, tool_dir, 'result', 'crashes')
+            queue_dir = os.path.join(exp_dir, tool_dir, 'result', 'queue')
         has_neg_ts = search_neg_ts(seeds_dir)
         with open(summary_txt) as f:
             row = []
@@ -81,6 +90,10 @@ def write_rows(writer, filenames, time):
                 if '/home/maze/outputs/' in line and '_crash_abort' in line and not has_neg_ts:
                     time_taken = line.strip('/home/maze/outputs/').split('_')[0]
                     row.append(float(time_taken))
+                    # find the execution number
+                    execs = get_execs_from_crash_dir(crash_dir)
+                    if execs is not None:
+                        row.append(execs)
                     break
                 numb = numb + 1
             if len(row) < 12:
@@ -97,15 +110,6 @@ def write_rows(writer, filenames, time):
                             break
                 assert os.path.getsize(last_cov_file) > 0, f'file {last_cov_file} is empty'
                 targer_count = get_target_visited_times(last_cov_file, msize)
-                if tool == 'aflpp':
-                    crash_dir = os.path.join(exp_dir, tool_dir, 'result', 'default', 'crashes')
-                    queue_dir = os.path.join(exp_dir, tool_dir, 'result', 'default', 'queue')
-                elif 'mazerunner' in tool:
-                    crash_dir = os.path.join(exp_dir, tool_dir, 'result', 'mazerunner', 'crashes')
-                    queue_dir = os.path.join(exp_dir, tool_dir, 'result', 'mazerunner', 'queue')
-                else:
-                    crash_dir = os.path.join(exp_dir, tool_dir, 'result', 'crashes')
-                    queue_dir = os.path.join(exp_dir, tool_dir, 'result', 'queue')
                 crash_tcs = set()
                 for tc in os.listdir(crash_dir):
                     if 'id' in tc:
@@ -122,6 +126,10 @@ def write_rows(writer, filenames, time):
                                 tte = get_tte_from_queue_dir(queue_dir, start_time, bin_path)
                             assert tte > 0 and tte != float('inf'), f'tte is {tte}'
                         row.append(tte)
+                        # find the execution number
+                        execs = get_execs_from_crash_dir(crash_dir)
+                        if execs is not None:
+                            row.append(execs)
                     elif 'beacon' in tool:
                         for cov_file in reversed(sorted_maze_cov_files):
                             target_visited_times = get_target_visited_times(cov_file, msize)
@@ -139,6 +147,17 @@ def search_neg_ts(queue_dir):
         if ts < 0: 
             return True
     return False
+
+def get_execs_from_crash_dir(crash_dir):
+    tcs = sorted(os.listdir(crash_dir))
+    if 'README.txt' in tcs:
+        tcs.remove('README.txt')
+    if not tcs:
+        return None
+    tc = tcs[0]
+    if 'execs:' in tc:
+        return int(tc.split('execs:')[1].split(',')[0])
+    return int(tc.split(',')[1])
 
 def get_tte_from_crash_dir(crash_dir, start_time):
     tte = float('inf')
@@ -255,6 +274,19 @@ def get_TTE(data):
         average_TTE = (TTE_sum / bug_count)/60
         return '%02.2f' % average_TTE
 
+# get average execs
+def get_execs(data):
+    execs_sum = 0.0
+    bug_count = 0
+    for row in data:
+        if row['Execs taken to first crash'] != None and row['Execs taken to first crash'] != '':
+            execs_sum += float(row['Execs taken to first crash'])
+            bug_count += 1
+    if bug_count == 0:
+        return '-'
+    average_execs = execs_sum / bug_count
+    return '%02.0f' % average_execs
+
 def print_results_fuzzer(data, tool, param):
     print("##############################################")
     print("Fuzzer:\t\t" + tool)
@@ -266,6 +298,7 @@ def print_results_fuzzer(data, tool, param):
         print("Coverage (%):\t" + get_coverage(tool_data[v]))
         print("Bugs (%):\t" + get_rate(tool_data[v]))
         print("TTE (min):\t" + get_TTE(tool_data[v]))
+        print("Execs:\t" + get_execs(tool_data[v]))
 
 def sort_values(values):
     values_int = set()
@@ -348,6 +381,16 @@ def print_TTE(data, tool, param, values):
         row += '\t\t'
     print(row)
 
+def print_execs(data, tool, param, values):
+    tool_data, row = get_tool(data, tool, param)
+    for v in values:
+        if v in tool_data:
+            row += get_execs(tool_data[v])
+        else:
+            row += '-'
+        row += '\t\t'
+    print(row)
+
 def print_results_paper(tools, param):
     param_values = get_param_values(param, tools)
     numb_param = len(param_values)
@@ -376,6 +419,14 @@ def print_results_paper(tools, param):
     print(line)
     for tool in tools:
         print_TTE(tools[tool], tool, param, param_values)
+        print(line)
+
+    # print execs results
+    print_measurement("Execs", line_header)
+    print_headers(param, param_values)
+    print(line)
+    for tool in tools:
+        print_execs(tools[tool], tool, param, param_values)
         print(line)
 
 def parse_csv(summary_txt, param, time, mode):

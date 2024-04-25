@@ -6,3 +6,4 @@ programs.list
 out*/
 *DS_Store
 results/
+pyrightconfig.json

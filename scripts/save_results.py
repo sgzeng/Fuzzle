@@ -6,7 +6,22 @@ import subprocess
 from collections import defaultdict
 from glob import glob
 
-TOOLS = ['afl', 'afl++', 'aflgo', 'eclipser', 'fuzzolic', 'beacon-prebuilt', 'beacon-src', 'selectfuzz', 'dafl', 'mazerunner-w-policy', 'mazerunner-wo-policy']
+TOOLS = [
+    'afl',
+    'afl++',
+    'aflgo',
+    'eclipser',
+    'fuzzolic',
+    'beacon-prebuilt',
+    'beacon-src',
+    'selectfuzz',
+    'dafl',
+    'mazerunner-w-policy',
+    'mazerunner-wo-policy',
+    'mazerunner-exploit-avg',
+    'mazerunner-exploit-max',
+    'mazerunner-explore-max',
+    ]
 
 def get_coverage_files(output_dir):
     coverage_files = []

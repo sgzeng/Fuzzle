@@ -6,7 +6,22 @@ import subprocess
 # FIX accordingly (num maximum cores)
 NUM_WORKERS = 1
 
-TOOLS = ['afl', 'afl++', 'aflgo', 'eclipser', 'fuzzolic', 'beacon-prebuilt', 'beacon-src', 'selectfuzz', 'dafl', 'mazerunner-w-policy', 'mazerunner-wo-policy']
+TOOLS = [
+    'afl',
+    'afl++',
+    'aflgo',
+    'eclipser',
+    'fuzzolic',
+    'beacon-prebuilt',
+    'beacon-src',
+    'selectfuzz',
+    'dafl',
+    'mazerunner-w-policy',
+    'mazerunner-wo-policy',
+    'mazerunner-exploit-avg',
+    'mazerunner-exploit-max',
+    'mazerunner-explore-max',
+    ]
 
 # FIX accordingly (memory limit)
 SPAWN_CMD = 'docker run --rm -m=8g --cpuset-cpus=%d -it -d --name %s %s'

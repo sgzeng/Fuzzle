@@ -10,7 +10,22 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # FIX accordingly (num maximum cores)
 NUM_WORKERS = 15
 
-TOOLS = ['afl', 'afl++', 'aflgo', 'eclipser', 'fuzzolic', 'beacon-prebuilt', 'beacon-src', 'selectfuzz', 'dafl', 'mazerunner-w-policy', 'mazerunner-wo-policy']
+TOOLS = [
+    'afl',
+    'afl++',
+    'aflgo',
+    'eclipser',
+    'fuzzolic',
+    'beacon-prebuilt',
+    'beacon-src',
+    'selectfuzz',
+    'dafl',
+    'mazerunner-w-policy',
+    'mazerunner-wo-policy',
+    'mazerunner-exploit-avg',
+    'mazerunner-exploit-max',
+    'mazerunner-explore-max',
+    ]
 
 # FIX accordingly (memory limit)
 LOGICAL_CPU_NUM = 32
@@ -95,7 +110,7 @@ def start_container(conf, task, i):
         tool_ = 'aflpp'
     else:
         tool_ = tool
-    image = 'maze-%s' % tool_
+    image = tool_
     container = '%s-%sx%s-%s-%s-%s-%s-%s-%d' % (algo, width, height, seed, num, cycle, gen, tool_, epoch)
     # Spawn a container
     cmd = SPAWN_CMD % (i, i+LOGICAL_CPU_NUM/2, container, image)
@@ -114,7 +129,6 @@ def resume_container(conf, task):
         tool_ = 'aflpp'
     else:
         tool_ = tool
-    image = 'maze-%s' % tool_
     container = '%s-%sx%s-%s-%s-%s-%s-%s-%d' % (algo, width, height, seed, num, cycle, gen, tool_, epoch)
     cmd = START_CMD % container
     run_cmd(cmd)

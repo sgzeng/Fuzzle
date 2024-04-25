@@ -33,6 +33,7 @@ export AFLGO_PREPROCESSING=1
 mkdir -p $OUT_DIR
 mkdir -p $AFLGO_TARGET_DIR
 
+touch $WORKDIR/.sa_start
 pushd $BUILD_DIR
 # get the target line
 cp ${MAZE_DIR}/src/${PROGRAM_NAME}.c ./file.c

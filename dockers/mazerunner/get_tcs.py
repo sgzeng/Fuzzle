@@ -13,7 +13,7 @@ def main(dest_dir):
 
     # Collect testcases
     counter_tc = 1
-    tc_dir = os.path.join(OUTDIR, 'generated_inputs')
+    tc_dir = os.path.join(OUTDIR, 'queue')
     for name in os.listdir(tc_dir):
         if name.startswith('id:') and 'orig:seed' not in name:
             tc_path = os.path.join(tc_dir, name)
@@ -30,6 +30,11 @@ def main(dest_dir):
             counter_cr = counter_cr + 1
 
     os.system('touch /home/maze/outputs/.done')
+    dot_start_ts = os.path.getmtime(time_file)
+    time_file = os.path.join(WORKDIR, '.sa_start')
+    dot_sa_start_ts = os.path.getmtime(time_file)
+    with open('/home/maze/outputs/sa_time.txt', 'w') as f:
+        f.write(str(dot_sa_start_ts - dot_start_ts))
 
 if __name__ == '__main__':
     dest_dir = sys.argv[1]

@@ -22,6 +22,8 @@ mkdir $OUT_DIR
 rm -rf $WORKDIR/src/*
 rm -rf $INDIR/*
 
+touch $WORKDIR/.sa_start
+
 # copy makefile
 cp /home/maze/script/clang-compile.mk $WORKDIR/src/Makefile
 cp /home/maze/script/dafl-compile-noasan.mk $INDIR/Makefile

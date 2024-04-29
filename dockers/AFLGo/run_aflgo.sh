@@ -20,6 +20,7 @@ fi
 
 cp ${MAZE_DIR}/src/${PROGRAM_NAME}.c $WORKDIR/file.c
 
+touch $WORKDIR/.sa_start
 mkdir obj-aflgo; mkdir obj-aflgo/temp;
 AFLGO=/home/maze/tools/aflgo; SUBJECT=$PWD; TMP_DIR=$PWD/obj-aflgo/temp
 

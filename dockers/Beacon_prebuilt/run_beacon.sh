@@ -18,6 +18,7 @@ if [[ ! -d "$IN_DIR" ]] || [[ ! -f "${IN_DIR}/init" ]]; then
     python3 -c "print('A' * 1024)" > ${IN_DIR}/init
 fi
 
+touch $WORKDIR/.sa_start
 pushd $WORKDIR
 cp ${MAZE_DIR}/src/${PROGRAM_NAME}.c ./file.c
 ABORT_LINE=`awk '/abort*/ { print NR }' file.c`

@@ -18,6 +18,7 @@ if [[ ! -d "$IN_DIR" ]] || [[ ! -f "${IN_DIR}/init" ]]; then
     python3 -c "print('A' * 1024)" > ${IN_DIR}/init
 fi
 
+touch $WORKDIR/.sa_start
 export SELECTFUZZ=/selectfuzz; export SUBJECT=${WORKDIR}/obj-aflgo; export TMP_DIR=${WORKDIR}/obj-aflgo/temp
 mkdir -p ${WORKDIR}/obj-aflgo/temp
 

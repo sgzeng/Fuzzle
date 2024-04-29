@@ -34,7 +34,7 @@ def main(dest_dir):
     time_file = os.path.join(WORKDIR, '.sa_start')
     dot_sa_start_ts = os.path.getmtime(time_file)
     with open('/home/maze/outputs/sa_time.txt', 'w') as f:
-        f.write(str(dot_sa_start_ts - dot_start_ts))
+        f.write(str(dot_start_ts - dot_sa_start_ts) + '\n')
 
 if __name__ == '__main__':
     dest_dir = sys.argv[1]

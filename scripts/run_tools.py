@@ -110,7 +110,7 @@ def start_container(conf, task, i):
         tool_ = 'aflpp'
     else:
         tool_ = tool
-    image = tool_
+    image = f"maze-{tool_}"
     container = '%s-%sx%s-%s-%s-%s-%s-%s-%d' % (algo, width, height, seed, num, cycle, gen, tool_, epoch)
     # Spawn a container
     cmd = SPAWN_CMD % (i, i+LOGICAL_CPU_NUM/2, container, image)

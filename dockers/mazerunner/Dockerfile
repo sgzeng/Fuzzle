@@ -36,7 +36,7 @@ RUN echo "3.11.5" > /workdir/symsan/.python-version
 RUN mkdir -p /home/maze/tools
 RUN mkdir -p /home/maze/workspace
 ADD run_mazerunner-wo-policy.sh /home/maze/tools/run_mazerunner-wo-policy.sh
-ADD run_mazerunner-w-policy.sh /home/maze/tools/run_mazerunner-w-policy.sh
+ADD run_mazerunner-w-policy.sh /home/maze/tools/run_mazerunner-explore-avg.sh
 ADD utils.py /home/maze/tools/utils.py
 ADD monitor.py /home/maze/tools/visualize_maze_cov.py
 ADD get_tcs.py /home/maze/tools/get_tcs.py

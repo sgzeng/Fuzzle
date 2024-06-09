@@ -292,12 +292,11 @@ def run_experiment(task, cpu_queue):
             print(f"Error removing directory {maze_out_path}: {e}")
     cpu_id = cpu_queue.get()
     start_container(conf, task, cpu_id)
-    has_result = run_tool(conf, task)
-    if has_result:
-        resume_container(conf, task)
-        store_outputs(conf, out_dir, task)
-        store_coverage(conf, out_dir, task)
-        kill_container(task)
+    run_tool(conf, task)
+    resume_container(conf, task)
+    store_outputs(conf, out_dir, task)
+    store_coverage(conf, out_dir, task)
+    kill_container(task)
     remove_container(task)
     cpu_queue.put(cpu_id)
     

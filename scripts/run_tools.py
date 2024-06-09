@@ -25,6 +25,7 @@ TOOLS = [
     'mazerunner-exploit-avg',
     'mazerunner-exploit-max',
     'mazerunner-explore-max',
+    'mazerunner-norl-avg',
     ]
 
 # FIX accordingly (memory limit)
@@ -175,9 +176,7 @@ def run_tool(conf, task):
     maze_dir = '/home/maze/maze'
     maze_size = str(int(width) * int(height))
     cmd = f'{script} {maze_dir} {bin_name} {duration} {maze_size} {maze_txt_name}'
-    while not file_exists_in_container(container, '/home/maze/workspace/.start'):
-        run_cmd_in_docker(container, cmd)
-        time.sleep(60)
+    run_cmd_in_docker(container, cmd)
     start_time = time.time()
     while not file_exists_in_container(container, '/home/maze/workspace/.done'):
         curr_time = time.time()

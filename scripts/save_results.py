@@ -16,6 +16,7 @@ TOOLS = [
     'beacon-src',
     'selectfuzz',
     'dafl',
+    'mazerunner-single-state',
     'mazerunner-wo-policy',
     'mazerunner-explore-avg',
     'mazerunner-exploit-avg',
@@ -44,7 +45,7 @@ def write_rows(writer, filenames, time):
         if 'error' in file_number:
             return -1
         return -int(file_number)
-    
+
     def get_target_visited_times(cov_file, msize):
         visited_fun_count = 0
         with open(cov_file) as f:
@@ -54,7 +55,7 @@ def write_rows(writer, filenames, time):
             elif len(lines) == msize:
                 visited_fun_count = int(lines[-1].strip())
         return visited_fun_count
-    
+
     for summary_txt in filenames:
         if not '{}h'.format(time) in summary_txt:
             continue
@@ -160,7 +161,7 @@ def search_neg_ts(queue_dir):
         if '_tc' not in tc:
             continue
         ts = float(tc.split('_')[0])
-        if ts < 0: 
+        if ts < 0:
             return True
     return False
 
@@ -192,7 +193,7 @@ def get_tte_from_crash_dir(crash_dir, start_time):
         else:
             ts = os.path.getmtime(os.path.join(crash_dir, tc)) - start_time
             tte = min(tte, ts)
-    return tte    
+    return tte
 
 def get_tte_from_queue_dir(queue_dir, start_time, bin_path):
     tc = search_crash(queue_dir, bin_path)
@@ -523,11 +524,15 @@ def load_config(path):
     return conf
 
 def main(file_list, out_path, param, time, mode):
-    f = open(out_path, 'w')
-    writer = csv.writer(f)
-    write_row_headers(writer)
-    write_rows(writer, file_list, time)
-    f.close()
+    with open(out_path, 'w') as f:
+        writer = csv.writer(f)
+        write_row_headers(writer)
+        write_rows(writer, file_list, time)
+    with open(out_path, 'r') as f:
+        lines = f.readlines()
+    lines.sort()
+    with open(out_path, 'w') as f:
+        f.writelines(lines)
     parse_csv(out_path, param, time, mode)
 
 if __name__ == '__main__':

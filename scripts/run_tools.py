@@ -20,6 +20,7 @@ TOOLS = [
     'beacon-src',
     'selectfuzz',
     'dafl',
+    'mazerunner-single-state',
     'mazerunner-wo-policy',
     'mazerunner-explore-avg',
     'mazerunner-exploit-avg',

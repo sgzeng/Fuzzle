@@ -23,6 +23,7 @@ TOOLS = [
     'mazerunner-exploit-max',
     'mazerunner-explore-max',
     'mazerunner-norl-avg',
+    'mazerunner-aflgo-solver',
     ]
 
 # FIX accordingly (memory limit)

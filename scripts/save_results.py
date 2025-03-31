@@ -23,6 +23,7 @@ TOOLS = [
     'mazerunner-exploit-max',
     'mazerunner-explore-max',
     'mazerunner-norl-avg',
+    'mazerunner-aflgo-solver',
     ]
 
 def get_coverage_files(output_dir):

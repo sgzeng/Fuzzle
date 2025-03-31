@@ -23,6 +23,7 @@ TOOLS = [
     'mazerunner-exploit-max',
     'mazerunner-explore-max',
     'mazerunner-norl-avg',
+    'mazerunner-aflgo-solver',
     ]
 
 # FIX accordingly (memory limit)
@@ -112,6 +113,7 @@ def get_bin_path(app):
     return bin_path
 
 def run_tools(conf, works):
+    duration = conf['Duration']
     for i in range(len(works)):
         app, tool, epoch = works[i]
         if tool == 'afl++':
@@ -123,14 +125,14 @@ def run_tools(conf, works):
         script = '/home/maze/tools/run_%s.sh' % tool
         src_path = get_src_path(app)
         bin_path = get_bin_path(app)
-        duration = conf['Duration']
         cmd = '%s %s %s %s' % (script, src_path, bin_path, duration)
 
         run_cmd_in_docker(container, cmd)
 
-    time.sleep(duration*60 + 60) # sleep timeout + extra 1 min.
+    time.sleep(duration*60 + 60)
 
 def store_outputs(conf, out_dir, works):
+    duration = conf['Duration']
     # First, collect testcases in /home/maze/outputs
     for i in range(len(works)):
         app, tool, epoch = works[i]
@@ -143,7 +145,7 @@ def store_outputs(conf, out_dir, works):
         cmd = 'python3 /home/maze/tools/get_tcs.py /home/maze/outputs'
         run_cmd_in_docker(container, cmd)
 
-    time.sleep(60)
+    time.sleep(duration*60 + 60)
 
     # Next, store outputs to host filesystem
     for i in range(len(works)):
@@ -160,7 +162,7 @@ def store_outputs(conf, out_dir, works):
         cmd = CP_CMD % (container, out_path)
         run_cmd(cmd)
 
-    time.sleep(60)
+    time.sleep(duration*60 + 60)
 
 def kill_containers(works):
     for i in range(len(works)):

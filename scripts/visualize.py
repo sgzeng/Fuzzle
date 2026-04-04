@@ -1,5 +1,9 @@
 import sys
- 
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 from PIL import Image
 
 def scale_maze(maze_txt):

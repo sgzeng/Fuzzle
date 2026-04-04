@@ -1,14 +1,16 @@
 #!/bin/bash
-set -e
-set -x
 
-FUZZ_OUTPUT=$(pwd $1)
-CONFIG=$2
-PARAM=Generator
-DURATION=$3
+# Usage: save_results.sh <FUZZ_OUT> <EXPERIMENT.conf> <PARAM> <DURATION_h> [MODE]
+# EXPERIMENT.conf: same JSON as run_tools.py (MazeList, MazeDir, Tools, …) — save_results.py reads MazeDir.
+# PARAM: Algorithm | Size | Cycle | Generator
+FUZZ_OUTPUT=$(readlink -f "$1")
+CONFIG=$(readlink -f "$2")
+PARAM=$3
+DURATION=$4
+MODE_PAPER=${5:-paper}
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 
-MODE=paper
+MODE=$MODE_PAPER
 for dir in "$FUZZ_OUTPUT"/*; do
     if [ -d "$dir" ]; then
         MAZE_OUTPUT="$dir"

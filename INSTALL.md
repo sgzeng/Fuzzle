@@ -16,12 +16,15 @@ $ cd Fuzzle
 
 ## Installing Dependencies
 
-To install dependencies for generating benchmarks, run the following from
-`Fuzzle` directory:
+The repo pins a pyenv Python via [`.python-version`](.python-version) (currently 3.11.1). From the repo root:
 
 ```
+$ pyenv install 3.11.1   # if missing
+$ cd Fuzzle && pyenv local   # should show 3.11.1
 $ python3 -m pip install -r ./maze-gen/requirements.txt
 ```
+
+`maze-gen/requirements.txt` pins `numpy<2` so matplotlib loads correctly (NumPy 2.x breaks older matplotlib wheels).
 
 Additionally, you will need to have Z3 solver installed for handling .smt2 files
 from CVEs. Below are the instructions for installing Z3 solver using pySMT's

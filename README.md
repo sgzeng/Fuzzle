@@ -1,266 +1,287 @@
 # Fuzzle
 
-Fuzzle is a bug synthesizer that generates buggy benchmarks for evaluating
-fuzzers. Fuzzle uses randomly created mazes and path constraints from previous
-CVEs to generate subject programs. The details of Fuzzle can be found in our
-paper "Fuzzle: Making a Puzzle for Fuzzers" (ASE 2022).
+Fuzzle synthesizes buggy C programs for evaluating directed grey-box fuzzers.
+It wraps randomly generated mazes (optionally seeded with real CVE path constraints) in compilable C source, then drives any supported fuzzer inside an isolated Docker container.
 
-## Installation
+---
 
-To build Fuzzle and setup the docker and python environment, run the following:
+## Repository Layout
 
 ```
-$ git clone https://github.com/SoftSec-KAIST/Fuzzle
-$ cd Fuzzle
-
-# Build docker images (this step may take a few hours to complete)
-$ ./scripts/build_all_dockers.sh
-
-# Install the dependencies
-$ python3 -m pip install -r ./maze-gen/requirements.txt
-```
-Note that you need python 3.7+ and Z3 solver to generate benchmark programs
-using Fuzzle.
-
-For more detailed installation instructions, please see  `INSTALL.md`.
-
-## Extension for Multiple Bugs
-
-Fuzzle was modified to generate programs that contain multiple bugs for evaluating multi-target directed fuzzers. To use this version of Fuzzle, please go to [multi-target](https://github.com/SoftSec-KAIST/Fuzzle/tree/multi-target) branch of this repository.
-
-The details of the modifications can be found in the paper "On the Effectiveness of Synthetic Benchmarks for Evaluating Directed Grey-box Fuzzers" (APSEC 2023).
-
-## Usage
-
-For a quick tutorial on how to use Fuzzle, please skip to the
-[tutorial](#tutorial).
-
-### Generating a benchmark
-
-You can generate a buggy benchmark using `generate.sh` in the `scripts`
-directory. You need to specify values for the following parameters using the
-command line arguments:
-- Maze generation algorithm (`-a`): Backtracking, Kruskal, Prims, Wilsons,
-  Sidewinder
-- Width of the maze (`-w`): any integer greater than 2
-- Height of the maze (`-h`): any integer greater than 2
-- Output directory (`-o`): path to the output directory
-
-You can optionally specify the following parameters:
-- Pseudorandom seed (`-r`): any integer between 0 and 2^32 - 1
-- Percentage of cycles (`-c`): any integer between 0 and 100
-- Maze exit (`-e`): default or random
-- Generator (`-g`): default_gen or CVE_gen
-
-Note, if you use CVE_gen for the generator, you must also provide a path to SMT
-file with `-s` option.
-
-For example, the following command generates a default program based on a 10x10
-maze created with Wilson's algorithm.
-
-```
-$ ./scripts/generate.sh -a Wilsons -w 10 -h 10 -o <OUT_PATH>
+Fuzzle/
+  maze-gen/      Python maze + C-code generators
+  CVEs/          *.smt2 constraint files (6 CVEs: CVE-2016-{4487,4489,4491,4492,4493,6131})
+  scripts/       generate.sh  generate_benchmark.py  run_tools.py
+                 save_results.sh  visualize.py
+  dockers/       One subdir per tool: Dockerfile + run_*.sh
+  examples/      example{1,2,3}.{list,conf}  (ready-to-run sets)
+  tutorial/      programs.list + run.conf    (quick 5-min smoke test)
 ```
 
-A different program can be generated using the same maze but with realistic
-constraints obtained from the previous CVE (e.g., CVE-2016-4487).
+A generated benchmark directory contains:
 
 ```
-$ ./scripts/generate.sh -a Wilsons -w 10 -h 10 -g CVE_gen -s ./CVEs/CVE-2016-4487.smt2 -o <OUT_PATH>
+<OUT>/
+  src/   *.c                   C source (gcc -O0 -g)
+  bin/   *.bin                 compiled binaries
+  txt/   *.txt                 maze array (used by visualizer)
+  png/   *.png                 maze image
+  sln/   *_solution.txt        shortest solution path
 ```
 
-After the script finishes running, the output directory specified with
-`<OUT_PATH>` will contain 5 subdirectories as follows:
+---
 
-- `src`: contains C source code of generated programs
-- `bin`: contains compiled binaries of generated programs
-- `txt`: contains array form of mazes used in generating programs
-- `png`: contains images (.png files) of mazes used
-- `sln`: contains the shortest solution path for each maze
+## Prerequisites
 
+| Requirement | Notes |
+|---|---|
+| Python 3.7+ | host-side generation only |
+| gcc | compiles generated C during `generate.sh` |
+| Z3 solver | required for CVE-based generation |
+| Docker | superuser access; images must be pre-built |
 
-### Generating a large benchmark
-
-To generate multiple programs for building a large benchmark, you can use
-`generate_benchmark.py` as follows:
-
-```
-$ cd scripts
-$ python3 ./generate_benchmark.py <FILE_PATH> <OUT_PATH>
+```bash
+pip install -r maze-gen/requirements.txt
+pysmt-install --z3        # install Z3 for pySMT
+pysmt-install --check     # verify
 ```
 
-Here, `<FILE_PATH>` is a path to the file that specifies the configuration of
-programs to be generated. The template for the configuration of a program is:
+---
+
+## Generating Maze Programs
+
+### Single program
+
+```bash
+./scripts/generate.sh -a Wilsons -w 10 -h 10 -o /out/path
+
+# Key flags:
+#   -a  algorithm   Backtracking | Kruskal | Prims | Wilsons | Sidewinder
+#   -w  width       integer > 2
+#   -h  height      integer > 2
+#   -o  output dir
+#   -r  seed        default 1
+#   -n  count       number of mazes to generate, default 1
+#   -c  cycles%     0–100, default 100
+#   -e  exit        default | random
+#   -g  generator   default_gen | CVE_gen  (CVE_gen requires -s)
+#   -s  smt2 path   e.g. CVEs/CVE-2016-4487.smt2
+```
+
+CVE-based example:
+
+```bash
+./scripts/generate.sh -a Wilsons -w 10 -h 10 \
+    -g CVE_gen -s CVEs/CVE-2016-4487.smt2 -o /out/path
+```
+
+### Batch generation
+
+Create a `programs.list` file — one program per line:
 
 ```
-<algorithm>,<width>,<height>,<seed>,<index>,<percentage of cycles>,<generator>
+<algorithm>,<width>,<height>,<seed>,<index>,<N>percent,<generator>
 ```
 
-Below is an example file for the two programs generated above with
-`generate.sh`.
+`generator` is either `default_gen` or `CVE-2016-4487_gen` (the CVE prefix is resolved automatically to the matching `.smt2` file in `CVEs/`).
+
+Example:
 
 ```
 Wilsons,10,10,1,1,100percent,default_gen
 Wilsons,10,10,1,1,100percent,CVE-2016-4487_gen
+Backtracking,30,30,1,1,25percent,default_gen
 ```
 
-### Running a fuzzing experiment
+Run:
 
-To run fuzzers on the generated benchmark in a separate docker container:
-
-```
-$ python3 ./scripts/run_tools.py <CONFIG_FILE> <FUZZ_OUT>
+```bash
+python3 scripts/generate_benchmark.py programs.list /out/path
 ```
 
-An example of the configuration file (`<CONFIG_FILE>`) is provided below.
+---
 
+## Docker Images
+
+`run_tools.py` selects images by the rule `image = "maze-" + tool_name` (with `afl++` → `aflpp`).
+
+| `Tools` value in `.conf` | Docker image |
+|---|---|
+| `afl++` | `maze-aflpp` |
+| `aflgo` | `maze-aflgo` |
+| `beacon-prebuilt` | `maze-beacon-prebuilt` |
+| `beacon-src` | `maze-beacon-src` |
+| `selectfuzz` | `maze-selectfuzz` |
+| `dafl` | `maze-dafl` |
+| `mazerunner-exploit-max` | `maze-mazerunner-exploit-max` |
+| `mazerunner-exploit-avg` | `maze-mazerunner-exploit-avg` |
+| `mazerunner-explore-max` | `maze-mazerunner-explore-max` |
+| `mazerunner-explore-avg` | `maze-mazerunner-explore-avg` |
+| `mazerunner-wo-policy` | `maze-mazerunner-wo-policy` |
+| `mazerunner-norl-avg` | `maze-mazerunner-norl-avg` |
+| `mazerunner-aflgo-solver` | `maze-mazerunner-aflgo-solver` |
+| `mazerunner-single-state` | `maze-mazerunner-single-state` |
+
+> **`maze-afl`** (classic AFL) is commented out in `build_all_dockers.sh` and not built by default — use `afl++` instead.
+>
+> **`maze-windranger`** is pre-built but `windranger` is absent from `run_tools.py`'s `TOOLS` list; manual integration required.
+
+### Container filesystem contract
+
+`run_tools.py` does the following per experiment:
+
+1. `docker run maze-<tool>` — spawns a fresh container, pinned to 2 CPUs, 4 GB RAM.
+2. `docker cp <MazeDir> <container>:/home/maze/maze` — injects the benchmark.
+3. Executes inside the container: `/home/maze/tools/run_<tool>.sh <maze_dir> <bin_name> <duration_min> <maze_size> <maze_txt_base>`.
+4. On completion: copies `/home/maze/outputs` and `/home/maze/workspace/outputs` out to the host, then removes the container.
+
+The script names inside each image must match exactly: `run_aflgo.sh`, `run_dafl.sh`, `run_mazerunner-exploit-max.sh`, etc.
+
+### Tuning resource constants
+
+Edit the top of `scripts/run_tools.py` before running:
+
+```python
+NUM_WORKERS    = 15   # max parallel containers
+LOGICAL_CPU_NUM = 32  # logical cores on your machine
+# SPAWN_CMD uses -m=4g; change the docker run template if needed
 ```
+
+---
+
+## Running a Fuzzing Experiment
+
+### 1. Write a config file
+
+```json
 {
-    "MazeList" : "../examples/example1.list",
+    "MazeList" : "/abs/path/programs.list",
     "Repeats"  : 1,
     "Duration" : 60,
-    "MazeDir"  : "../examples/example1_benchmark",
-    "Tools"    : ["afl", "afl++", "aflgo", "eclipser", "fuzzolic"]
+    "MazeDir"  : "/abs/path/benchmark",
+    "Tools"    : ["afl++", "aflgo", "mazerunner-exploit-max"]
 }
 ```
 
-- `MazeList`: path to the list of programs in the benchmark
-- `Repeats`: number of repeats for each fuzzer
-- `Duration`: length of fuzzing campaign in minutes
-- `MazeDir`: path to a directory that contains benchmark programs
-- `Tools`: one or more of the available fuzzers (`afl`, `afl++`, `aflgo`,
-  `eclipser`, `fuzzolic`)
+- `MazeList` — same format as used during generation.
+- `Duration` — in minutes.
+- Paths may be absolute or relative to `scripts/`.
 
-Note that all paths (`MazeList` and `MazeDir`) should be either absolute paths
-or relative paths from the `scripts` directory.
+### 2. Launch
 
-More examples of configuration files are provided under `examples` directory.
-Running each example should take about 1 hour. Please refer to
-[Examples](#examples) section for more details.
-
-After the experiment is finished, the output directory (`<FUZZ_OUT>`) will
-contain generated testcases from each run as well as code coverage measured with
-gcov.
-
-### Storing and summarizing results
-
-Once the fuzzing campaign is finished, the coverage and bug finding results can
-be summarized in csv format using the script as follows:
-
-```
-$ ./scripts/save_results.sh <FUZZ_OUT> <FILE_PATH> <PARAM> <DURATION> <MODE>
+```bash
+cd scripts
+python3 run_tools.py my.conf /abs/path/outputs
 ```
 
-- `<FUZZ_OUT>`: directory that contains fuzzing outputs
-- `<FILE_PATH>`: path to save the output file
-
-The script summarizes the fuzzing results based on the given parameter and
-fuzzing duration. For example, by running:
+### Output structure
 
 ```
-$ ./scripts/save_results.sh <FUZZ_OUT> <FILE_PATH> Algorithm 24 paper
-```
-each fuzzer's performance after 24 hours across different maze generation
-algorithms will be displayed on the screen.
-
-- `<PARAM>`: one of four parameters of Fuzzle (`Algorithm`, `Size`, `Cycle`, `Generator`)
-- `<DURATION>`: length of fuzzing campaign in hours
-- `<MODE>`: `paper` for displaying tables similar to the ones shown in the
-  paper, `fuzzer` for displaying summarized results for each fuzzer.
-
-### Visualizing coverage results
-
-You can also visualize the code coverage results in the form of 2D maze, where
-each cell represents a function in the program. The script for visualization
-takes maze array (.txt), coverage results (.gcov), and maze size as input and
-returns a png file.
-
-```
-$ python3 ./scripts/visualize.py <TXT_PATH> <COV_PATH> <OUT_PATH> <SIZE>
-```
-- `<TXT_PATH>`: path to .txt file for the chosen maze. Note that such files are
-  automatically created under the `txt` directory when generating a benchmark.
-- `<COV_PATH>`: path to .gcov file that contains coverage information. The
-  script for running fuzzers (`run_tools.py`) saves hourly coverage results in
-the output directory.
-
-### Examples
-
-There are 3 sets of examples (`example#.list` and `example#.conf`) each of which
-takes about 1 hour to run.
-
-To generate the benchmark and test the fuzzers using these examples, run the
-following commands from the `scripts` directory:
-
-```
-$ python3 ./generate_benchmark.py ../examples/example#.list ../examples/example#_benchmark
-$ python3 ./run_tools.py ../examples/example#.conf ../examples/example#_outputs
-$ ./save_results.sh ../examples/example#_outputs ../examples/example#_outputs/example#_results <PARAM> 0 paper > ../examples/example#_outputs/example#_summary
-$ cat ../examples/example#_outputs/example#_summary
+outputs/
+  <algo>_<W>x<H>_<seed>_<idx>_<cycle>_<gen>/
+    <tool>-<epoch>/
+      outputs/          raw fuzzer queue & crashes
+      outputs/.done     sentinel file — written when campaign ends
+      result/           workspace outputs (mazerunner variants only)
+      cov_txt_*/        line-level coverage text
+      cov_gcov_*/       gcov directory (used by save_results & visualize)
 ```
 
-Note that you should replace # with the example number. Also, you should use the
-matching pair to run the experiment. For example, if you used `example1.list` to
-generate the benchmark, you should use `example1.conf` to run the fuzzers.
+---
 
-Because each example varies different parameters, `<PARAM>` for
-`save_results.sh` script is specific to each example.
+## Static Analysis
 
-- For example 1: `Algorithm`
-- For example 2: `Size`
-- For example 3: `Generator`
+Each `run_<tool>.sh` performs its own pre-fuzzing static analysis automatically — no host-side step is required.
 
-The fuzzing results for each experiment will be saved in the `example#_outputs`
-directory.
+| Tool | Static analysis step |
+|---|---|
+| AFLGo, SelectFuzz | LTO compile → compute CFG distances (`afl-clang-fast -distance=...`) |
+| Beacon-prebuilt | `precondInfer file.bc` (LLVM 4 + SVF, precondition inference) |
+| Beacon-src | `wllvm` bitcode extraction → `precondInfer/build/bin/precondInfer` |
+| MazeRunner | `clang-12` preprocessing binary → `static_analysis.py` (distance from `BBtargets.txt`) |
+| DAFL | Sparrow analyzer → `afl-clang-fast` instrumentation |
 
-### Tutorial
+The target line in each generated program is always the call to `func_bug(input, ...)`, which all toolchains identify automatically with `awk '/func_bug\(input/ { print NR }'`.
 
-In this tutorial, we will generate a benchmark consisting of 5 programs and run
-AFL on the generated benchmark for 5 minutes per program. We will then visualize
-the coverage results from one of the fuzzing campaigns using Fuzzle.
+### Custom host-side analysis
 
-1. Generate the benchmark with:
+The generated C source files are self-contained and can be compiled with any toolchain:
+
+```bash
+# Emit LLVM bitcode for custom analysis:
+clang -emit-llvm -g -c \
+    benchmark/src/Wilsons_10x10_1_1_100percent_default_gen.c -o out.bc
+
+# Or run Clang Static Analyzer:
+scan-build gcc -O0 -g benchmark/src/*.c
 ```
-$ cd scripts
-$ python3 ./generate_benchmark.py ../tutorial/programs.list ../tutorial/benchmark
-```
-Note that `programs.list` contains the configurations of 5 programs to be
-generated.
 
-2. Run AFL:
-```
-$ python3 ./run_tools.py ../tutorial/run.conf ../tutorial/outputs
-```
-The `run.conf` file specifies the path to the generated benchmark, the duration
-of the fuzzing run (5 minutes), and the fuzzer to run (AFL). This step will take
-approximately 1 hour.
+---
 
-3. Store and visualize results:
-```
-$ ./save_results.sh ../tutorial/outputs ../tutorial/results Algorithm 0 paper > ../tutorial/summary
-$ cat ../tutorial/summary
-$ PATH_TO_TXT=../tutorial/benchmark/txt/Wilsons_20x20_1_1.txt
-$ PATH_TO_COV=../tutorial/outputs/cov_gcov_Wilsons_20x20_1_1_25percent_default_gen_afl_0/Wilsons_20x20_1_1_25percent_default_gen_afl_0.c.gcov
-$ python3 ./visualize.py $PATH_TO_TXT $PATH_TO_COV ../tutorial/wilsons 20
-```
-The fuzzing results will be stored in `results.csv` and the summary of results
-will be printed out to the screen. You can also check the visual aid generated
-(`wilsons.png`) in the `tutorial` directory.
+## Collecting Results
 
-## Artifact
+### Summarize
 
-We publicize the artifacts to help reproduce the experiments in our paper. Please
-check our [Fuzzle-Artifact](https://doi.org/10.5281/zenodo.7031393) repository.
+```bash
+./scripts/save_results.sh <FUZZ_OUT> <RESULT_CSV> <PARAM> <DURATION_h> <MODE>
+```
+
+| Argument | Values |
+|---|---|
+| `PARAM` | `Algorithm` \| `Size` \| `Cycle` \| `Generator` |
+| `DURATION_h` | hours elapsed (use `0` for full run) |
+| `MODE` | `paper` (per-algorithm table) \| `fuzzer` (per-fuzzer summary) |
+
+Example:
+
+```bash
+./scripts/save_results.sh outputs/ results.csv Algorithm 24 paper
+```
+
+### Visualize coverage on maze grid
+
+```bash
+python3 scripts/visualize.py \
+    benchmark/txt/Wilsons_10x10_1_1.txt \
+    outputs/<maze>/<tool>-0/cov_gcov_*/Wilsons_*.c.gcov \
+    out/wilsons \
+    10        # maze width (= height for square mazes)
+```
+
+Produces `out/wilsons.png`: each cell represents one function; green = covered, red = not covered.
+
+---
+
+## End-to-End Example (tutorial)
+
+```bash
+# 1. Generate 5 programs (20x20, 5 algorithms, default_gen)
+cd scripts
+python3 generate_benchmark.py ../tutorial/programs.list ../tutorial/benchmark
+
+# 2. Fuzz with AFL for 5 minutes each
+python3 run_tools.py ../tutorial/run.conf ../tutorial/outputs
+
+# 3. Summarize and visualize
+./save_results.sh ../tutorial/outputs ../tutorial/results Algorithm 0 paper \
+    > ../tutorial/summary
+cat ../tutorial/summary
+
+python3 visualize.py \
+    ../tutorial/benchmark/txt/Wilsons_20x20_1_1.txt \
+    ../tutorial/outputs/Wilsons_20x20_1_1_25percent_default_gen/afl-0/cov_gcov_*/Wilsons_*.c.gcov \
+    ../tutorial/wilsons 20
+```
+
+---
 
 ## Citation
 
-If you use Fuzzle in scientific work, consider citing our paper:
-
 ```bibtex
 @INPROCEEDINGS{lee:ase:2022,
-  author = {Haeun Lee and Soomin Kim and Sang Kil Cha},
-  title = {{Fuzzle}: Making a Puzzle for Fuzzers},
+  author    = {Haeun Lee and Soomin Kim and Sang Kil Cha},
+  title     = {{Fuzzle}: Making a Puzzle for Fuzzers},
   booktitle = {Proceedings of the International Conference on Automated Software Engineering},
-  year = 2022
+  year      = 2022
 }
 ```

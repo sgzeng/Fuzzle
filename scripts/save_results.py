@@ -33,6 +33,24 @@ def get_coverage_files(output_dir):
         coverage_files.append(filename)
     return coverage_files
 
+
+def cov_path_matches_duration(summary_txt, time):
+    """Select cov_txt snapshots for save_results duration (hours).
+
+    get_coverage.sh writes $MAZE_TOOL.txt when NUMB_HOURS < 1 (run shorter than
+    1 hour), and $MAZE_TOOL_${HOUR}hr.txt for each hour when duration >= 60m.
+    The old check `'{time}h' in path` never matched 0h because the short-run
+    file is named ..._tool_epoch.txt (epoch 0, not the literal substring 0h).
+    """
+    try:
+        t = int(time)
+    except (TypeError, ValueError):
+        return False
+    base = os.path.basename(summary_txt)
+    if t == 0:
+        return 'hr.txt' not in base
+    return f'{t}h' in summary_txt
+
 def write_row_headers(writer):
     headers = ["Algorithm", "Size", "Seed", "Cycle Proportion",
      "Generator", "Tool", "Epoch",
@@ -59,7 +77,7 @@ def write_rows(writer, filenames, time):
         return visited_fun_count
 
     for summary_txt in filenames:
-        if not '{}h'.format(time) in summary_txt:
+        if not cov_path_matches_duration(summary_txt, time):
             continue
         maze = summary_txt.split('/')[-1].strip('.txt\n').split('_')
         tool =maze[7]

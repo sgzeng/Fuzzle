@@ -24,6 +24,7 @@ TOOLS = [
     'mazerunner-explore-max',
     'mazerunner-norl-avg',
     'mazerunner-aflgo-solver',
+    'aflpp-cmplog',
     ]
 
 def get_coverage_files(output_dir):

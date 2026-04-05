@@ -28,6 +28,7 @@ TOOLS = [
     'mazerunner-explore-max',
     'mazerunner-norl-avg',
     'mazerunner-aflgo-solver',
+    'aflpp-cmplog',
     ]
 
 # FIX accordingly (memory limit)
